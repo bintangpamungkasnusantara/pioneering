@@ -31,7 +31,6 @@ canvas{outline:none;display:block}
   #canvas-container{min-height:62vh}
   .canvas-hud{top:8px!important;left:8px!important;right:8px!important}
   .canvas-hud .secondary-hud{display:none}
-  .bottom-help{display:none}
 }
 @media (max-width: 640px){
   header .bg-zinc-800 span{display:none}
@@ -46,13 +45,108 @@ canvas{outline:none;display:block}
   .mobile-camera{top:62px!important;right:8px!important}
   .mobile-camera button{min-width:38px;min-height:28px}
   #toast{left:12px;right:12px;bottom:12px}
+  #inspector-panel,#multi-select-panel{left:8px!important;right:8px!important;bottom:8px!important;max-width:none!important}
 }
+
+/* ── Rotation Gizmo (SVG overlay, kayak Canva) ── */
+#rotation-gizmo{
+  position:absolute;
+  pointer-events:none;
+  z-index:25;
+  display:none;
+}
+#rotation-gizmo svg { overflow:visible; }
+.gizmo-ring{
+  fill:none;stroke:#f59e0b;stroke-width:2.5;
+  stroke-dasharray:6 4;
+  opacity:.85;
+  cursor:grab;
+  pointer-events:stroke;
+}
+.gizmo-ring:hover,.gizmo-ring.dragging{stroke:#fbbf24;stroke-width:3;opacity:1;}
+.gizmo-handle{
+  fill:#f59e0b;stroke:#09090b;stroke-width:1.5;
+  cursor:grab;pointer-events:all;
+  transition:fill .15s;
+}
+.gizmo-handle:hover,.gizmo-handle.dragging{fill:#fbbf24;}
+#gizmo-degree-label{
+  position:absolute;
+  background:#09090b;
+  color:#f59e0b;
+  font-family:'Space Grotesk',sans-serif;
+  font-size:11px;font-weight:700;
+  padding:2px 7px;border-radius:6px;
+  border:1px solid #f59e0b55;
+  pointer-events:none;
+  white-space:nowrap;
+  display:none;
+  transform:translate(-50%,-120%);
+}
+
+/* ── Inspector Panel (koordinat & rotasi tongkat terpilih) ── */
+#inspector-panel,#multi-select-panel{
+  position:absolute;
+  bottom:24px;left:50%;
+  transform:translateX(-50%);
+  z-index:30;
+  background:#18181b;
+  border:1px solid #3f3f46;
+  border-radius:16px;
+  padding:12px 14px 10px;
+  min-width:340px;
+  box-shadow:0 8px 32px #0008;
+  display:none;
+  pointer-events:auto;
+  user-select:none;
+}
+#inspector-panel.visible,#multi-select-panel.visible{display:block;}
+.inspector-field{
+  display:flex;align-items:center;gap:6px;
+}
+.inspector-field label{
+  font-size:10px;font-weight:700;
+  color:#71717a;text-transform:uppercase;
+  width:14px;text-align:center;
+  flex-shrink:0;
+}
+.inspector-field input{
+  flex:1;
+  background:#09090b;
+  border:1px solid #3f3f46;
+  color:#f4f4f5;
+  font-size:12px;font-family:'Space Grotesk',monospace;
+  font-weight:600;
+  border-radius:8px;
+  padding:4px 8px;
+  outline:none;
+  text-align:right;
+  min-width:0;
+  transition:border-color .15s;
+}
+.inspector-field input:focus{border-color:#f59e0b;color:#fbbf24;}
+.inspector-sep{width:1px;height:28px;background:#27272a;flex-shrink:0;}
+
+/* Selected stick highlight ring drawn in Three.js scene via userData.isSelected */
 </style>
 </head>
 <body class="bg-zinc-950 text-zinc-100 h-screen w-screen flex flex-col">
 <header class="bg-zinc-900/90 backdrop-blur border-b border-zinc-800 h-14 px-4 flex items-center justify-between shrink-0 z-30">
   <div class="flex items-center gap-3">
-    <div class="w-9 h-9 bg-amber-500 rounded-lg flex items-center justify-center font-display font-bold text-zinc-950 text-xl shadow-lg shadow-amber-500/20 border-b-2 border-amber-700">🪵</div>
+    <div class="w-9 h-9 rounded-lg flex items-center justify-center shadow-lg shadow-amber-500/20 overflow-hidden">
+      <svg viewBox="0 0 48 48" width="36" height="36" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="24" cy="24" r="23" fill="#f59e0b"/>
+        <circle cx="24" cy="24" r="23" fill="none" stroke="#b45309" stroke-width="2"/>
+        <g stroke="#78350f" stroke-width="3.4" stroke-linecap="round">
+          <line x1="10" y1="34" x2="34" y2="10"/>
+          <line x1="10" y1="14" x2="34" y2="38"/>
+          <line x1="7" y1="24" x2="41" y2="24"/>
+        </g>
+        <g fill="#ef4444" stroke="#78350f" stroke-width="1">
+          <circle cx="24" cy="24" r="3"/>
+        </g>
+      </svg>
+    </div>
     <div>
       <h1 class="font-display font-bold text-lg tracking-tight text-white flex items-center gap-2 leading-none">PIONEER<span class="text-amber-500">CRAFT</span><span class="text-[10px] uppercase font-mono px-2 py-0.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-md">STUDIO 3D</span></h1>
       <p class="text-[11px] text-zinc-400 font-medium">Simulator Rakit Tongkat Pioneering 3D Interaktif</p>
@@ -76,12 +170,19 @@ canvas{outline:none;display:block}
 <div class="flex-1 flex flex-col lg:flex-row relative overflow-hidden">
 <aside class="mobile-sidebar w-full lg:w-80 bg-zinc-900 border-r border-zinc-800 flex flex-col z-20 shrink-0 max-h-[42vh] lg:max-h-none overflow-y-auto">
   <div class="p-3.5 border-b border-zinc-800">
-    <label class="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block mb-2 flex items-center justify-between"><span>Mode Alat</span><span class="text-[10px] text-zinc-500 font-mono font-normal">1, 2, 3</span></label>
-    <div class="grid grid-cols-3 gap-2">
+    <label class="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block mb-2">Mode Alat</label>
+    <div class="grid grid-cols-4 gap-2">
       <button id="tool-place" onclick="setTool('place')" class="tool-active p-2.5 rounded-xl border font-bold text-xs flex flex-col items-center gap-1 transition"><i class="fa-solid fa-plus text-sm"></i>Pasang</button>
+      <button id="tool-select" onclick="setTool('select')" class="p-2.5 rounded-xl border border-zinc-800 bg-zinc-950 text-zinc-400 hover:border-zinc-700 font-bold text-xs flex flex-col items-center gap-1 transition"><i class="fa-solid fa-arrow-pointer text-sm"></i>Pilih</button>
       <button id="tool-delete" onclick="setTool('delete')" class="p-2.5 rounded-xl border border-zinc-800 bg-zinc-950 text-zinc-400 hover:border-zinc-700 font-bold text-xs flex flex-col items-center gap-1 transition"><i class="fa-solid fa-eraser text-sm"></i>Hapus</button>
       <button id="tool-paint" onclick="setTool('paint')" class="p-2.5 rounded-xl border border-zinc-800 bg-zinc-950 text-zinc-400 hover:border-zinc-700 font-bold text-xs flex flex-col items-center gap-1 transition"><i class="fa-solid fa-palette text-sm"></i>Cat</button>
     </div>
+    <button id="btn-multi-select" onclick="toggleMultiSelectMode()" class="w-full mt-2 flex items-center justify-between bg-zinc-950 border border-zinc-800 hover:border-zinc-700 rounded-xl px-3 py-2 transition">
+      <span class="text-[11px] font-semibold text-zinc-400 flex items-center gap-1.5"><i class="fa-solid fa-object-group text-xs"></i>Pilih Banyak Tongkat</span>
+      <span id="multi-select-switch" class="relative w-9 h-5 rounded-full bg-zinc-700 transition-colors shrink-0">
+        <span id="multi-select-knob" class="absolute top-0.5 left-0.5 w-4 h-4 bg-zinc-300 rounded-full transition-transform"></span>
+      </span>
+    </button>
   </div>
   <div class="p-3.5 border-b border-zinc-800">
     <div class="flex items-center justify-between mb-2"><label class="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Jenis Tongkat</label><span class="text-[10px] text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 font-mono">PIONEERING</span></div>
@@ -142,8 +243,121 @@ canvas{outline:none;display:block}
     <button onclick="setCameraView('top')" class="px-2 py-1 text-[10px] font-bold rounded hover:bg-zinc-800 text-zinc-300">Ats</button>
     <button onclick="setCameraView('bottom')" class="px-2 py-1 text-[10px] font-bold rounded hover:bg-zinc-800 text-zinc-300">Bwh</button>
   </div>
-  <div class="bottom-help absolute bottom-5 left-1/2 -translate-x-1/2 bg-zinc-900/90 backdrop-blur border border-zinc-800 px-4 py-2 rounded-2xl shadow-2xl flex items-center gap-3 whitespace-nowrap">
-    <span class="text-xs text-zinc-300 font-medium flex items-center gap-2"><i class="fa-solid fa-mouse-pointer text-amber-400"></i><span><strong>Klik Kiri:</strong> Pasang / Hapus / Cat · <strong>Drag:</strong> Putar Kamera · <strong>Wheel:</strong> Zoom</span></span>
+  <!-- Rotation Gizmo SVG overlay -->
+  <div id="rotation-gizmo">
+    <svg id="gizmo-svg" width="120" height="120" viewBox="-60 -60 120 120">
+      <!-- Ring X (merah, rotasi X) -->
+      <circle class="gizmo-ring" id="ring-x" r="44" stroke="#ef4444" data-axis="x"/>
+      <!-- Ring Z (biru, rotasi Z) -->
+      <ellipse class="gizmo-ring" id="ring-z" rx="44" ry="18" stroke="#3b82f6" data-axis="z"/>
+      <!-- Ring Y (hijau, rotasi Y — vertikal) -->
+      <ellipse class="gizmo-ring" id="ring-y" rx="18" ry="44" stroke="#22c55e" data-axis="y"/>
+      <!-- Handle dot tengah -->
+      <circle class="gizmo-handle" id="gizmo-center" r="6"/>
+    </svg>
+    <div id="gizmo-degree-label">0°</div>
+  </div>
+
+  <!-- Inspector panel: muncul saat tongkat dipilih -->
+  <div id="inspector-panel">
+    <div class="flex items-center justify-between mb-2.5">
+      <div class="flex items-center gap-2">
+        <i class="fa-solid fa-sliders text-amber-400 text-xs"></i>
+        <span class="text-[11px] font-bold text-zinc-300 uppercase tracking-wider">Inspector</span>
+        <span id="inspector-stick-label" class="text-[10px] text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 font-mono">–</span>
+      </div>
+      <button onclick="deselectStick()" class="text-zinc-500 hover:text-red-400 transition text-xs"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <!-- Posisi -->
+    <div class="mb-2">
+      <div class="text-[10px] text-zinc-500 uppercase font-bold tracking-wider mb-1.5">Posisi</div>
+      <div class="flex items-center gap-2">
+        <div class="inspector-field flex-1">
+          <label style="color:#ef4444">X</label>
+          <input id="inp-pos-x" type="number" step="0.5" onchange="applyInspector()" onkeydown="inspectorKey(event)"/>
+        </div>
+        <div class="inspector-sep"></div>
+        <div class="inspector-field flex-1">
+          <label style="color:#22c55e">Y</label>
+          <input id="inp-pos-y" type="number" step="0.5" onchange="applyInspector()" onkeydown="inspectorKey(event)"/>
+        </div>
+        <div class="inspector-sep"></div>
+        <div class="inspector-field flex-1">
+          <label style="color:#3b82f6">Z</label>
+          <input id="inp-pos-z" type="number" step="0.5" onchange="applyInspector()" onkeydown="inspectorKey(event)"/>
+        </div>
+      </div>
+    </div>
+    <!-- Rotasi -->
+    <div>
+      <div class="text-[10px] text-zinc-500 uppercase font-bold tracking-wider mb-1.5">Rotasi (derajat)</div>
+      <div class="flex items-center gap-2">
+        <div class="inspector-field flex-1">
+          <label style="color:#ef4444">X</label>
+          <input id="inp-rot-x" type="number" step="5" onchange="applyInspector()" onkeydown="inspectorKey(event)"/>
+        </div>
+        <div class="inspector-sep"></div>
+        <div class="inspector-field flex-1">
+          <label style="color:#22c55e">Y</label>
+          <input id="inp-rot-y" type="number" step="5" onchange="applyInspector()" onkeydown="inspectorKey(event)"/>
+        </div>
+        <div class="inspector-sep"></div>
+        <div class="inspector-field flex-1">
+          <label style="color:#3b82f6">Z</label>
+          <input id="inp-rot-z" type="number" step="5" onchange="applyInspector()" onkeydown="inspectorKey(event)"/>
+        </div>
+      </div>
+    </div>
+    <div class="mt-2.5 flex gap-2">
+      <button onclick="resetSelectedRotation()" class="flex-1 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold rounded-xl border border-zinc-700 transition">Reset Rotasi</button>
+      <button onclick="snapSelectedToGround()" class="flex-1 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold rounded-xl border border-zinc-700 transition"><i class="fa-solid fa-arrow-down-to-line text-xs mr-1"></i>Snap ke Lantai</button>
+      <button onclick="duplicateSelected()" title="Duplikat Tongkat" class="px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 text-xs font-semibold rounded-xl border border-amber-500/20 transition"><i class="fa-solid fa-clone text-xs"></i></button>
+      <button onclick="deleteSelected()" title="Hapus Tongkat" class="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-semibold rounded-xl border border-red-500/20 transition"><i class="fa-solid fa-trash text-xs"></i></button>
+    </div>
+  </div>
+
+  <!-- Multi-select panel: muncul saat >1 tongkat dipilih -->
+  <div id="multi-select-panel">
+    <div class="flex items-center justify-between mb-2.5">
+      <div class="flex items-center gap-2">
+        <i class="fa-solid fa-object-group text-amber-400 text-xs"></i>
+        <span class="text-[11px] font-bold text-zinc-300 uppercase tracking-wider">Multi Pilih</span>
+        <span id="multi-select-count" class="text-[10px] text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 font-mono">0 Tongkat</span>
+      </div>
+      <button onclick="deselectStick()" class="text-zinc-500 hover:text-red-400 transition text-xs"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <p class="text-[10px] leading-relaxed text-zinc-500 mb-2.5">Aktifkan toggle <strong>Pilih Banyak Tongkat</strong>, lalu klik beberapa tongkat untuk menambah atau menghapusnya dari pilihan.</p>
+    <div class="mb-2.5">
+      <div class="text-[10px] text-zinc-500 uppercase font-bold tracking-wider mb-1.5">Geser Posisi Bersama (Δ)</div>
+      <div class="flex items-center gap-2">
+        <div class="inspector-field flex-1">
+          <label style="color:#ef4444">X</label>
+          <input id="multi-offset-x" type="number" step="0.5" value="0" onkeydown="multiOffsetKey(event)"/>
+        </div>
+        <div class="inspector-sep"></div>
+        <div class="inspector-field flex-1">
+          <label style="color:#22c55e">Y</label>
+          <input id="multi-offset-y" type="number" step="0.5" value="0" onkeydown="multiOffsetKey(event)"/>
+        </div>
+        <div class="inspector-sep"></div>
+        <div class="inspector-field flex-1">
+          <label style="color:#3b82f6">Z</label>
+          <input id="multi-offset-z" type="number" step="0.5" value="0" onkeydown="multiOffsetKey(event)"/>
+        </div>
+      </div>
+      <button onclick="applyGroupOffset()" class="w-full mt-2 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold rounded-xl border border-zinc-700 transition"><i class="fa-solid fa-arrows-up-down-left-right text-xs mr-1.5"></i>Terapkan Geser ke Semua</button>
+    </div>
+    <div class="mb-2.5">
+      <div class="text-[10px] text-zinc-500 uppercase font-bold tracking-wider mb-1.5">Cerminkan / Flip Bersama</div>
+      <div class="grid grid-cols-2 gap-2">
+        <button onclick="groupFlipHorizontal()" class="p-2 bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition"><i class="fa-solid fa-arrows-left-right text-xs"></i>Balik Horizontal</button>
+        <button onclick="groupFlipVertical()" class="p-2 bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition"><i class="fa-solid fa-arrows-up-down text-xs"></i>Balik Vertikal</button>
+      </div>
+    </div>
+    <div class="flex gap-2">
+      <button onclick="duplicateAllSelected()" class="flex-1 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 text-xs font-semibold rounded-xl border border-amber-500/20 transition"><i class="fa-solid fa-clone text-xs mr-1.5"></i>Duplikat Semua</button>
+      <button onclick="deleteAllSelected()" title="Hapus Semua Tongkat Terpilih" class="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-semibold rounded-xl border border-red-500/20 transition"><i class="fa-solid fa-trash text-xs"></i></button>
+    </div>
   </div>
 </main>
 </div>
@@ -182,7 +396,8 @@ const PIONEERING_STICKS = [
 let state={
   activeTool:'place',selectedStickId:'stick_120',selectedColorId:'natural',
   rotation:{x:0,y:0,z:0},sticksInScene:[],isExploded:false,
-  cameraTargetPos:{x:18,y:13,z:20},isTransitioningCamera:false
+  cameraTargetPos:{x:18,y:13,z:20},isTransitioningCamera:false,
+  multiSelectMode:false
 };
 
 let scene,camera,renderer,controls,planeGrid,raycaster,mouse,ghostMesh;
@@ -418,14 +633,23 @@ function onPointerDown(event){
   }
 
   const hits=raycaster.intersectObjects(state.sticksInScene.map(s=>s.meshGroup),true);
-  if(!hits.length)return;
+  if(!hits.length){
+    // Klik area kosong di mode select = deselect
+    if(state.activeTool==='select')deselectStick();
+    return;
+  }
   let group=hits[0].object;
   while(group&&(!group.userData||!group.userData.id))group=group.parent;
   if(!group)return;
   const item=state.sticksInScene.find(s=>s.id===group.userData.id);
   if(!item)return;
+  if(state.activeTool==='select'){
+    selectStickInScene(item.id,state.multiSelectMode);
+    return;
+  }
   if(state.activeTool==='delete'){
     scene.remove(group);state.sticksInScene=state.sticksInScene.filter(s=>s.id!==item.id);playSound('delete');updateHUDStats();
+    if(selectedStickIds.includes(item.id))deselectStick();
   }else if(state.activeTool==='paint'){
     const color=getColorDef();item.colorId=color.id;group.userData.colorId=color.id;
     group.traverse(o=>{if(o.isMesh&&o.material&&o.material.color&&o.parent?.name!=='connection-markers')o.material.color.set(color.hex)});
@@ -442,7 +666,479 @@ function rotateStick(axis){
   showToast(`Rotasi tongkat: X ${state.rotation.x}° · Y ${state.rotation.y}° · Z ${state.rotation.z}°`);
 }
 
-function setTool(tool){state.activeTool=tool;['place','delete','paint'].forEach(t=>{const b=document.getElementById('tool-'+t);b.classList.toggle('tool-active',t===tool)});if(tool!=='place'&&ghostMesh)ghostMesh.visible=false;showToast(`Mode alat: ${tool.toUpperCase()}`)}
+function toggleMultiSelectMode(){
+  state.multiSelectMode=!state.multiSelectMode;
+  const sw=document.getElementById('multi-select-switch');
+  const knob=document.getElementById('multi-select-knob');
+  sw.classList.toggle('bg-amber-500',state.multiSelectMode);
+  sw.classList.toggle('bg-zinc-700',!state.multiSelectMode);
+  knob.classList.toggle('translate-x-4',state.multiSelectMode);
+  if(state.activeTool!=='select')setTool('select');
+  showToast(state.multiSelectMode?'Mode Pilih Banyak aktif · klik beberapa tongkat':'Mode Pilih Banyak nonaktif');
+}
+
+function setTool(tool){
+  state.activeTool=tool;
+  ['place','select','delete','paint'].forEach(t=>{
+    const b=document.getElementById('tool-'+t);
+    if(b)b.classList.toggle('tool-active',t===tool);
+  });
+  if(tool!=='place'&&ghostMesh)ghostMesh.visible=false;
+  if(tool!=='select')deselectStick();
+  showToast(`Mode alat: ${tool.toUpperCase()}`);
+}
+
+// =========================================================
+// SELECTION SYSTEM (mendukung pilih satu atau banyak tongkat)
+// =========================================================
+let selectedStickId=null;      // tongkat terakhir yang dipilih (dipakai gizmo & inspector tunggal)
+let selectedStickIds=[];       // daftar semua id tongkat yang sedang dipilih
+let selectionOutlines=[];      // array THREE.Box3Helper untuk setiap tongkat terpilih
+
+function addSelectionOutline(item){
+  const box=new THREE.Box3().setFromObject(item.meshGroup);
+  const helper=new THREE.Box3Helper(box,new THREE.Color(0xf59e0b));
+  helper.userData.isSelectionHelper=true;
+  helper.userData.forId=item.id;
+  scene.add(helper);
+  selectionOutlines.push(helper);
+}
+
+function clearSelectionOutlines(){
+  selectionOutlines.forEach(h=>scene.remove(h));
+  selectionOutlines=[];
+}
+
+function rebuildSelectionOutlines(){
+  clearSelectionOutlines();
+  selectedStickIds.forEach(id=>{
+    const item=state.sticksInScene.find(s=>s.id===id);
+    if(item)addSelectionOutline(item);
+  });
+}
+
+function selectStickInScene(id,additive=false){
+  const item=state.sticksInScene.find(s=>s.id===id);
+  if(!item)return;
+  if(additive){
+    const idx=selectedStickIds.indexOf(id);
+    if(idx>=0)selectedStickIds.splice(idx,1);
+    else selectedStickIds.push(id);
+  }else{
+    selectedStickIds=[id];
+  }
+  selectedStickId=selectedStickIds.length?selectedStickIds[selectedStickIds.length-1]:null;
+  rebuildSelectionOutlines();
+  refreshSelectionPanels();
+}
+
+// Menampilkan panel yang sesuai: kosong / inspector tunggal / panel multi-pilih
+function refreshSelectionPanels(){
+  if(selectedStickIds.length===0){
+    closeInspector();
+    closeMultiSelectPanel();
+    hideGizmo();
+  }else if(selectedStickIds.length===1){
+    closeMultiSelectPanel();
+    const item=state.sticksInScene.find(s=>s.id===selectedStickIds[0]);
+    if(item){openInspector(item);showGizmo(item);}
+  }else{
+    closeInspector();
+    hideGizmo();
+    openMultiSelectPanel();
+  }
+}
+
+function openMultiSelectPanel(){
+  document.getElementById('multi-select-count').textContent=`${selectedStickIds.length} Tongkat`;
+  document.getElementById('multi-offset-x').value=0;
+  document.getElementById('multi-offset-y').value=0;
+  document.getElementById('multi-offset-z').value=0;
+  document.getElementById('multi-select-panel').classList.add('visible');
+}
+function closeMultiSelectPanel(){
+  document.getElementById('multi-select-panel').classList.remove('visible');
+}
+
+function multiOffsetKey(e){if(e.key==='Enter')applyGroupOffset();}
+
+function applyGroupOffset(){
+  if(!selectedStickIds.length)return;
+  const dx=parseFloat(document.getElementById('multi-offset-x').value)||0;
+  const dy=parseFloat(document.getElementById('multi-offset-y').value)||0;
+  const dz=parseFloat(document.getElementById('multi-offset-z').value)||0;
+  if(dx===0&&dy===0&&dz===0){showToast('Isi nilai geser X/Y/Z terlebih dahulu');return;}
+  selectedStickIds.forEach(id=>{
+    const item=state.sticksInScene.find(s=>s.id===id);
+    if(!item)return;
+    item.meshGroup.position.x+=dx;
+    item.meshGroup.position.y+=dy;
+    item.meshGroup.position.z+=dz;
+    item.pos.copy(item.meshGroup.position);
+    item.meshGroup.userData.basePos.copy(item.meshGroup.position);
+  });
+  rebuildSelectionOutlines();
+  document.getElementById('multi-offset-x').value=0;
+  document.getElementById('multi-offset-y').value=0;
+  document.getElementById('multi-offset-z').value=0;
+  showToast(`Posisi ${selectedStickIds.length} tongkat berhasil digeser`);
+}
+
+function groupFlipHorizontal(){
+  // Cermin kiri-kanan: posisi X ditukar terhadap titik tengah kelompok (seperti sayap kanan jadi kiri)
+  if(!selectedStickIds.length)return;
+  const items=selectedStickIds.map(id=>state.sticksInScene.find(s=>s.id===id)).filter(Boolean);
+  if(!items.length)return;
+  const pivotX=items.reduce((sum,it)=>sum+it.meshGroup.position.x,0)/items.length;
+  items.forEach(item=>{
+    const p=item.meshGroup.position;
+    p.x=2*pivotX-p.x;
+    item.meshGroup.rotation.y=-item.meshGroup.rotation.y;
+    item.meshGroup.rotation.z=-item.meshGroup.rotation.z;
+    item.pos.copy(p);
+    item.rotation.copy(item.meshGroup.rotation);
+    item.meshGroup.userData.basePos.copy(p);
+    item.meshGroup.userData.baseRotation.copy(item.meshGroup.rotation);
+  });
+  rebuildSelectionOutlines();
+  showToast(`${items.length} tongkat dicerminkan horizontal (kiri ↔ kanan)`);
+}
+
+function groupFlipVertical(){
+  // Cermin atas-bawah: posisi Y ditukar terhadap titik tengah kelompok (seperti segitiga terbalik)
+  if(!selectedStickIds.length)return;
+  const items=selectedStickIds.map(id=>state.sticksInScene.find(s=>s.id===id)).filter(Boolean);
+  if(!items.length)return;
+  const pivotY=items.reduce((sum,it)=>sum+it.meshGroup.position.y,0)/items.length;
+  items.forEach(item=>{
+    const p=item.meshGroup.position;
+    p.y=2*pivotY-p.y;
+    item.meshGroup.rotation.x=-item.meshGroup.rotation.x;
+    item.meshGroup.rotation.z=-item.meshGroup.rotation.z;
+    item.pos.copy(p);
+    item.rotation.copy(item.meshGroup.rotation);
+    item.meshGroup.userData.basePos.copy(p);
+    item.meshGroup.userData.baseRotation.copy(item.meshGroup.rotation);
+  });
+  rebuildSelectionOutlines();
+  showToast(`${items.length} tongkat dicerminkan vertikal (atas ↔ bawah)`);
+}
+
+function deselectStick(){
+  selectedStickIds=[];
+  selectedStickId=null;
+  clearSelectionOutlines();
+  closeInspector();
+  closeMultiSelectPanel();
+  hideGizmo();
+}
+
+// Refresh outline posisi setelah objek bergerak (dipakai saat 1 tongkat terpilih)
+function refreshSelectionOutline(){
+  if(!selectedStickId)return;
+  const item=state.sticksInScene.find(s=>s.id===selectedStickId);
+  if(!item)return;
+  const helper=selectionOutlines.find(h=>h.userData.forId===selectedStickId);
+  if(!helper)return;
+  const box=new THREE.Box3().setFromObject(item.meshGroup);
+  helper.box.copy(box);
+}
+
+// =========================================================
+// INSPECTOR PANEL
+// =========================================================
+function openInspector(item){
+  const panel=document.getElementById('inspector-panel');
+  panel.classList.add('visible');
+  const def=PIONEERING_STICKS.find(s=>s.id===item.typeId)||{name:'Tongkat'};
+  document.getElementById('inspector-stick-label').textContent=def.name;
+  syncInspectorFields(item);
+}
+
+function closeInspector(){
+  document.getElementById('inspector-panel').classList.remove('visible');
+}
+
+function syncInspectorFields(item){
+  const p=item.meshGroup.position;
+  const r=item.meshGroup.rotation;
+  const fmt=v=>parseFloat(v.toFixed(3));
+  document.getElementById('inp-pos-x').value=fmt(p.x);
+  document.getElementById('inp-pos-y').value=fmt(p.y);
+  document.getElementById('inp-pos-z').value=fmt(p.z);
+  document.getElementById('inp-rot-x').value=fmt(THREE.MathUtils.radToDeg(r.x));
+  document.getElementById('inp-rot-y').value=fmt(THREE.MathUtils.radToDeg(r.y));
+  document.getElementById('inp-rot-z').value=fmt(THREE.MathUtils.radToDeg(r.z));
+}
+
+function applyInspector(){
+  if(!selectedStickId)return;
+  const item=state.sticksInScene.find(s=>s.id===selectedStickId);
+  if(!item)return;
+  const px=parseFloat(document.getElementById('inp-pos-x').value)||0;
+  const py=parseFloat(document.getElementById('inp-pos-y').value)||0;
+  const pz=parseFloat(document.getElementById('inp-pos-z').value)||0;
+  const rx=parseFloat(document.getElementById('inp-rot-x').value)||0;
+  const ry=parseFloat(document.getElementById('inp-rot-y').value)||0;
+  const rz=parseFloat(document.getElementById('inp-rot-z').value)||0;
+  item.meshGroup.position.set(px,py,pz);
+  item.meshGroup.rotation.set(
+    THREE.MathUtils.degToRad(rx),
+    THREE.MathUtils.degToRad(ry),
+    THREE.MathUtils.degToRad(rz)
+  );
+  // Sync state.pos & state.rotation
+  item.pos.copy(item.meshGroup.position);
+  item.rotation.copy(item.meshGroup.rotation);
+  item.meshGroup.userData.basePos.copy(item.meshGroup.position);
+  refreshSelectionOutline();
+  showGizmo(item);
+}
+
+function inspectorKey(e){if(e.key==='Enter')applyInspector();}
+
+function resetSelectedRotation(){
+  if(!selectedStickId)return;
+  const item=state.sticksInScene.find(s=>s.id===selectedStickId);
+  if(!item)return;
+  item.meshGroup.rotation.set(0,0,0);
+  item.rotation.copy(item.meshGroup.rotation);
+  syncInspectorFields(item);
+  refreshSelectionOutline();
+  showGizmo(item);
+  showToast('Rotasi direset ke 0°');
+}
+
+function snapSelectedToGround(){
+  if(!selectedStickId)return;
+  const item=state.sticksInScene.find(s=>s.id===selectedStickId);
+  if(!item)return;
+  clampStickToGround(item.meshGroup);
+  item.pos.copy(item.meshGroup.position);
+  item.meshGroup.userData.basePos.copy(item.meshGroup.position);
+  syncInspectorFields(item);
+  refreshSelectionOutline();
+  showGizmo(item);
+  showToast('Tongkat di-snap ke lantai');
+}
+
+function duplicateSelected(){
+  if(!selectedStickId)return;
+  const item=state.sticksInScene.find(s=>s.id===selectedStickId);
+  if(!item)return;
+  const def=PIONEERING_STICKS.find(s=>s.id===item.typeId)||PIONEERING_STICKS[2];
+  const group=createStickGeometry(def,item.colorId);
+  const offset=def.radius*2+0.4;
+  const newPos=item.meshGroup.position.clone().add(new THREE.Vector3(offset,0,offset));
+  group.position.copy(newPos);
+  group.rotation.copy(item.meshGroup.rotation);
+  group.userData={
+    id:'stick_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),
+    typeId:def.id,colorId:item.colorId,length:def.length,radius:def.radius,
+    basePos:group.position.clone(),baseRotation:group.rotation.clone()
+  };
+  clampStickToGround(group);
+  group.userData.basePos.copy(group.position);
+  scene.add(group);
+  const newItem={id:group.userData.id,typeId:def.id,colorId:item.colorId,meshGroup:group,pos:group.position.clone(),rotation:group.rotation.clone()};
+  state.sticksInScene.push(newItem);
+  updateHUDStats();
+  playSound('place');
+  selectStickInScene(newItem.id);
+  showToast('Tongkat berhasil diduplikat');
+}
+
+function duplicateAllSelected(){
+  if(selectedStickIds.length<2)return;
+  const idsToClone=[...selectedStickIds];
+  const newIds=[];
+  idsToClone.forEach(id=>{
+    const item=state.sticksInScene.find(s=>s.id===id);
+    if(!item)return;
+    const def=PIONEERING_STICKS.find(s=>s.id===item.typeId)||PIONEERING_STICKS[2];
+    const group=createStickGeometry(def,item.colorId);
+    const offset=def.radius*2+0.6;
+    const newPos=item.meshGroup.position.clone().add(new THREE.Vector3(offset,0,offset));
+    group.position.copy(newPos);
+    group.rotation.copy(item.meshGroup.rotation);
+    group.userData={
+      id:'stick_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),
+      typeId:def.id,colorId:item.colorId,length:def.length,radius:def.radius,
+      basePos:group.position.clone(),baseRotation:group.rotation.clone()
+    };
+    clampStickToGround(group);
+    group.userData.basePos.copy(group.position);
+    scene.add(group);
+    const newItem={id:group.userData.id,typeId:def.id,colorId:item.colorId,meshGroup:group,pos:group.position.clone(),rotation:group.rotation.clone()};
+    state.sticksInScene.push(newItem);
+    newIds.push(newItem.id);
+  });
+  updateHUDStats();
+  playSound('place');
+  selectedStickIds=newIds;
+  selectedStickId=newIds[newIds.length-1]||null;
+  rebuildSelectionOutlines();
+  refreshSelectionPanels();
+  showToast(`${newIds.length} tongkat berhasil diduplikat`);
+}
+
+function deleteAllSelected(){
+  if(!selectedStickIds.length)return;
+  const count=selectedStickIds.length;
+  selectedStickIds.forEach(id=>{
+    const item=state.sticksInScene.find(s=>s.id===id);
+    if(item)scene.remove(item.meshGroup);
+  });
+  state.sticksInScene=state.sticksInScene.filter(s=>!selectedStickIds.includes(s.id));
+  deselectStick();
+  playSound('delete');
+  updateHUDStats();
+  showToast(`${count} tongkat dihapus`);
+}
+
+function deleteSelected(){
+  if(!selectedStickId)return;
+  const item=state.sticksInScene.find(s=>s.id===selectedStickId);
+  if(!item)return;
+  scene.remove(item.meshGroup);
+  state.sticksInScene=state.sticksInScene.filter(s=>s.id!==selectedStickId);
+  deselectStick();
+  playSound('delete');
+  updateHUDStats();
+  showToast('Tongkat dihapus');
+}
+
+// =========================================================
+// ROTATION GIZMO (kayak Canva — drag ring untuk rotate)
+// =========================================================
+const GIZMO_SIZE=56; // radius ring px
+let gizmoState={
+  visible:false,
+  screenX:0,screenY:0,    // center gizmo di layar
+  dragging:false,
+  dragAxis:null,          // 'x'|'y'|'z'
+  dragStartAngle:0,
+  dragStartRot:{x:0,y:0,z:0},
+};
+
+function showGizmo(item){
+  // Project world pos ke screen
+  const pos=item.meshGroup.position.clone();
+  const projected=pos.project(camera);
+  const rect=renderer.domElement.getBoundingClientRect();
+  const sx=((projected.x+1)/2)*rect.width;
+  const sy=((-projected.y+1)/2)*rect.height;
+  gizmoState.screenX=sx;
+  gizmoState.screenY=sy;
+  gizmoState.visible=true;
+  const el=document.getElementById('rotation-gizmo');
+  el.style.display='block';
+  el.style.left=(sx-GIZMO_SIZE)+'px';
+  el.style.top=(sy-GIZMO_SIZE)+'px';
+  el.style.width=(GIZMO_SIZE*2)+'px';
+  el.style.height=(GIZMO_SIZE*2)+'px';
+  document.getElementById('gizmo-svg').setAttribute('width',GIZMO_SIZE*2);
+  document.getElementById('gizmo-svg').setAttribute('height',GIZMO_SIZE*2);
+  document.getElementById('gizmo-svg').setAttribute('viewBox',`${-GIZMO_SIZE} ${-GIZMO_SIZE} ${GIZMO_SIZE*2} ${GIZMO_SIZE*2}`);
+  // Update ring size
+  const R=GIZMO_SIZE-6;
+  document.getElementById('ring-x').setAttribute('r',R);
+  document.getElementById('ring-z').setAttribute('rx',R);
+  document.getElementById('ring-z').setAttribute('ry',Math.round(R*0.38));
+  document.getElementById('ring-y').setAttribute('rx',Math.round(R*0.38));
+  document.getElementById('ring-y').setAttribute('ry',R);
+}
+
+function hideGizmo(){
+  gizmoState.visible=false;
+  document.getElementById('rotation-gizmo').style.display='none';
+  document.getElementById('gizmo-degree-label').style.display='none';
+}
+
+// Gizmo drag — attach ke rings
+(function setupGizmoDrag(){
+  const rings=['ring-x','ring-y','ring-z'];
+  rings.forEach(rid=>{
+    const el=document.getElementById(rid);
+    const axis=el.getAttribute('data-axis');
+
+    el.addEventListener('pointerdown',e=>{
+      if(!selectedStickId)return;
+      e.stopPropagation();
+      e.preventDefault();
+      controls.enabled=false;
+      gizmoState.dragging=true;
+      gizmoState.dragAxis=axis;
+      el.classList.add('dragging');
+      el.setPointerCapture(e.pointerId);
+      // Simpan rotasi awal dalam derajat
+      const item=state.sticksInScene.find(s=>s.id===selectedStickId);
+      if(item){
+        gizmoState.dragStartRot={
+          x:THREE.MathUtils.radToDeg(item.meshGroup.rotation.x),
+          y:THREE.MathUtils.radToDeg(item.meshGroup.rotation.y),
+          z:THREE.MathUtils.radToDeg(item.meshGroup.rotation.z),
+        };
+      }
+      // Sudut awal mouse relatif ke center gizmo
+      const rect=renderer.domElement.getBoundingClientRect();
+      const dx=e.clientX-rect.left-gizmoState.screenX;
+      const dy=e.clientY-rect.top-gizmoState.screenY;
+      gizmoState.dragStartAngle=Math.atan2(dy,dx);
+
+      const label=document.getElementById('gizmo-degree-label');
+      label.style.display='block';
+      label.style.left=(gizmoState.screenX)+'px';
+      label.style.top=(gizmoState.screenY-GIZMO_SIZE-14)+'px';
+    });
+
+    el.addEventListener('pointermove',e=>{
+      if(!gizmoState.dragging||gizmoState.dragAxis!==axis)return;
+      e.preventDefault();
+      const item=state.sticksInScene.find(s=>s.id===selectedStickId);
+      if(!item)return;
+      const rect=renderer.domElement.getBoundingClientRect();
+      const dx=e.clientX-rect.left-gizmoState.screenX;
+      const dy=e.clientY-rect.top-gizmoState.screenY;
+      const angle=Math.atan2(dy,dx);
+      let delta=THREE.MathUtils.radToDeg(angle-gizmoState.dragStartAngle);
+      // Snap ke 5°
+      delta=Math.round(delta/5)*5;
+
+      const newRot={...gizmoState.dragStartRot};
+      newRot[axis]=(newRot[axis]+delta+360)%360;
+
+      item.meshGroup.rotation.set(
+        THREE.MathUtils.degToRad(newRot.x),
+        THREE.MathUtils.degToRad(newRot.y),
+        THREE.MathUtils.degToRad(newRot.z)
+      );
+      item.rotation.copy(item.meshGroup.rotation);
+      syncInspectorFields(item);
+      refreshSelectionOutline();
+
+      const label=document.getElementById('gizmo-degree-label');
+      const sign=delta>=0?'+':'';
+      label.textContent=`${sign}${delta}° (${Math.round(newRot[axis])}°)`;
+      label.style.left=(gizmoState.screenX)+'px';
+      label.style.top=(gizmoState.screenY-GIZMO_SIZE-14)+'px';
+    });
+
+    el.addEventListener('pointerup',e=>{
+      if(!gizmoState.dragging)return;
+      gizmoState.dragging=false;
+      gizmoState.dragAxis=null;
+      el.classList.remove('dragging');
+      controls.enabled=true;
+      document.getElementById('gizmo-degree-label').style.display='none';
+      const item=state.sticksInScene.find(s=>s.id===selectedStickId);
+      if(item){
+        item.meshGroup.userData.basePos.copy(item.meshGroup.position);
+        showToast(`Rotasi: X ${Math.round(THREE.MathUtils.radToDeg(item.meshGroup.rotation.x))}° · Y ${Math.round(THREE.MathUtils.radToDeg(item.meshGroup.rotation.y))}° · Z ${Math.round(THREE.MathUtils.radToDeg(item.meshGroup.rotation.z))}°`);
+      }
+    });
+  });
+})();
 function selectStick(id){state.selectedStickId=id;renderUIComponents();updateGhostMesh();showToast(`Dipilih: ${getStickDef().name}`)}
 function selectColor(id){state.selectedColorId=id;const c=getColorDef();document.getElementById('selected-color-label').innerText=c.name;renderUIComponents();updateGhostMesh()}
 function updateHUDStats(){document.getElementById('hud-stick-count').innerText=`${state.sticksInScene.length} batang`}
@@ -492,9 +1188,20 @@ function renderUIComponents(){
   document.getElementById('color-palette-container').innerHTML=STICK_COLORS.map(c=>`<button onclick="selectColor('${c.id}')" title="${c.name}" class="w-full aspect-square rounded-xl border-2 transition relative ${state.selectedColorId===c.id?'border-amber-400 scale-110 shadow-lg ring-2 ring-amber-500/30':'border-zinc-800 hover:scale-105'}" style="background-color:${c.hex}"></button>`).join('');
 }
 
-function animate(){requestAnimationFrame(animate);animateCameraTransition();if(controls)controls.update();if(renderer&&scene&&camera)renderer.render(scene,camera)}
+function animate(){
+  requestAnimationFrame(animate);
+  animateCameraTransition();
+  if(controls)controls.update();
+  if(renderer&&scene&&camera){
+    renderer.render(scene,camera);
+    // Update posisi gizmo setiap frame (kamera bisa bergerak)
+    if(gizmoState.visible&&selectedStickId&&!gizmoState.dragging){
+      const item=state.sticksInScene.find(s=>s.id===selectedStickId);
+      if(item)showGizmo(item);
+    }
+  }
+}
 function onWindowResize(){const c=document.getElementById('canvas-container');if(!c||!camera||!renderer)return;camera.aspect=c.clientWidth/c.clientHeight;camera.updateProjectionMatrix();renderer.setSize(c.clientWidth,c.clientHeight)}
-window.addEventListener('keydown',e=>{if(e.key==='r'||e.key==='R')rotateStick('y');if(e.key==='t'||e.key==='T')rotateStick('x');if(e.key==='1')setTool('place');if(e.key==='2')setTool('delete');if(e.key==='3')setTool('paint');if(e.key==='z'&&(e.ctrlKey||e.metaKey))undoLastStick()});
 window.onload=()=>{renderUIComponents();init3DStudio();loadPreset('starter')};
 </script>
 </body>
