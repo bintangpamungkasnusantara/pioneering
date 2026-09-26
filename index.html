@@ -36,26 +36,38 @@ canvas { outline: none; display: block; touch-action: none; }
 }
 #canva-toolbar.visible { display: flex; align-items: center; gap: 6px; }
 
-/* Canvas rotation handle overlay */
-#rotation-handle-overlay {
+/* Canvas rotation handle overlays: X handle sits beside the stick, Y handle sits at the stick's middle */
+#rotate-x-handle, #rotate-y-handle {
   position: absolute;
   z-index: 38;
   display: none;
-  width: 44px;
-  height: 44px;
-  margin-left: -22px;
-  margin-top: -22px;
-  background: rgba(245, 158, 11, 0.2);
-  border: 2px dashed #f59e0b;
+  width: 40px;
+  height: 40px;
+  margin-left: -20px;
+  margin-top: -20px;
   border-radius: 50%;
   cursor: grab;
   align-items: center;
   justify-content: center;
-  color: #fbbf24;
-  box-shadow: 0 0 15px rgba(245, 158, 11, 0.4);
   touch-action: none;
 }
-#rotation-handle-overlay:active { cursor: grabbing; background: rgba(245, 158, 11, 0.4); scale: 1.1; }
+#rotate-x-handle:active, #rotate-y-handle:active { cursor: grabbing; scale: 1.12; }
+
+#rotate-x-handle {
+  background: rgba(56, 189, 248, 0.2);
+  border: 2px dashed #38bdf8;
+  color: #7dd3fc;
+  box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
+}
+#rotate-x-handle:active { background: rgba(56, 189, 248, 0.4); }
+
+#rotate-y-handle {
+  background: rgba(245, 158, 11, 0.2);
+  border: 2px dashed #f59e0b;
+  color: #fbbf24;
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.4);
+}
+#rotate-y-handle:active { background: rgba(245, 158, 11, 0.4); }
 
 /* Mobile Bottom Navigation & Sheets */
 @media (max-width: 768px) {
@@ -184,8 +196,11 @@ canvas { outline: none; display: block; touch-action: none; }
   <main class="flex-1 relative wood-pattern flex items-center justify-center overflow-hidden">
     <div id="canvas-container" class="w-full h-full cursor-grab active:cursor-grabbing"></div>
 
-    <!-- Rotation Handle Overlay (Canvas Style) -->
-    <div id="rotation-handle-overlay" title="Seret untuk memutar tongkat">
+    <!-- Rotation Handle Overlays (Canvas Style): X = miring naik/turun, Y = putar kanan/kiri -->
+    <div id="rotate-x-handle" title="Seret kanan/kiri untuk memiringkan (koordinat Z)">
+      <i class="fa-solid fa-arrows-up-down text-sm"></i>
+    </div>
+    <div id="rotate-y-handle" title="Seret naik/turun untuk memiringkan (koordinat X)">
       <i class="fa-solid fa-rotate text-sm"></i>
     </div>
 
@@ -220,16 +235,6 @@ canvas { outline: none; display: block; touch-action: none; }
 
     <!-- CANVA CONTEXTUAL FLOATING TOOLBAR -->
     <div id="canva-toolbar" class="pointer-events-auto">
-      <button onclick="rotateSelectedQuick(45)" title="Putar 45°" class="p-2 hover:bg-zinc-800 text-zinc-200 hover:text-amber-400 rounded-xl text-xs font-semibold flex items-center gap-1 transition">
-        <i class="fa-solid fa-rotate-right text-amber-400"></i><span>+45°</span>
-      </button>
-
-      <button onclick="rotateSelectedQuick(90)" title="Putar 90°" class="p-2 hover:bg-zinc-800 text-zinc-200 hover:text-amber-400 rounded-xl text-xs font-semibold flex items-center gap-1 transition">
-        <span>+90°</span>
-      </button>
-
-      <div class="h-5 w-px bg-zinc-800"></div>
-
       <!-- Duplicate -->
       <button onclick="duplicateSelected()" title="Duplikat Tongkat" class="p-2 hover:bg-zinc-800 text-zinc-200 hover:text-amber-400 rounded-xl text-xs font-semibold flex items-center gap-1 transition">
         <i class="fa-solid fa-clone text-amber-400"></i><span>Duplikat</span>
@@ -442,7 +447,9 @@ let state = {
   sticksInScene: [],
   selectedSticks: [],
   isDraggingStick: false,
-  isRotatingStick: false,
+  rotateAxis: null,
+  lastPointerX: 0,
+  lastPointerY: 0,
   draggedStick: null,
   dragPlane: null,
   dragPlaneIntersection: new THREE.Vector3(),
@@ -569,11 +576,23 @@ function init3DStudio() {
   el.addEventListener('pointerup', onPointerUp);
   window.addEventListener('resize', onWindowResize);
 
-  // Setup Rotation Handle Touch/Mouse Events
-  const rotOverlay = document.getElementById('rotation-handle-overlay');
-  rotOverlay.addEventListener('pointerdown', (e) => {
+  // Setup Rotation Handle Touch/Mouse Events (tombol biru = koordinat Z, tombol oren = koordinat X)
+  const rotXHandle = document.getElementById('rotate-x-handle'); // tombol biru
+  const rotYHandle = document.getElementById('rotate-y-handle'); // tombol oren
+
+  rotXHandle.addEventListener('pointerdown', (e) => {
     e.stopPropagation();
-    state.isRotatingStick = true;
+    state.rotateAxis = 'z';
+    state.lastPointerX = e.clientX;
+    state.lastPointerY = e.clientY;
+    controls.enabled = false;
+  });
+
+  rotYHandle.addEventListener('pointerdown', (e) => {
+    e.stopPropagation();
+    state.rotateAxis = 'x';
+    state.lastPointerX = e.clientX;
+    state.lastPointerY = e.clientY;
     controls.enabled = false;
   });
 
@@ -682,44 +701,6 @@ function addStickToCanvas(stickDefId = state.selectedStickId) {
   showToast(`${def.name} ditambahkan (Berdiri)`);
 }
 
-function addConnectionMarkers(group) {
-  const L = group.userData.length || getStickDef().length;
-  const R = group.userData.radius || getStickDef().radius;
-  const count = 6;
-  for (let i = 0; i < count; i++) {
-    const t = i / (count - 1);
-    const x = -L / 2 + t * L;
-    const marker = new THREE.Mesh(
-      new THREE.SphereGeometry(R * 0.35, 10, 10),
-      new THREE.MeshBasicMaterial({ color: 0xef4444, transparent: true, opacity: 0.0 }) // hidden unless debug/snap
-    );
-    marker.position.set(x, 0, 0);
-    marker.userData.isNode = true;
-    group.add(marker);
-  }
-}
-
-function addStickToCanvas(stickDefId = state.selectedStickId) {
-  const def = getStickDef(stickDefId);
-  const stick = createStickGeometry(def, state.selectedColorId);
-  
-  // Position in front of camera target / ground center
-  stick.position.set(
-    (Math.random() - 0.5) * 2,
-    def.radius + 0.05,
-    (Math.random() - 0.5) * 2
-  );
-
-  scene.add(stick);
-  state.sticksInScene.push(stick);
-
-  playSound('place');
-  saveStateToHistory();
-  updateStickCountHUD();
-  selectStick(stick);
-  showToast(`${def.name} ditambahkan`);
-}
-
 function selectStick(mesh, append = false) {
   if (!mesh) return;
   let curr = mesh;
@@ -749,11 +730,13 @@ function updateSelectionHighlights() {
   }
 
   const toolbar = document.getElementById('canva-toolbar');
-  const rotOverlay = document.getElementById('rotation-handle-overlay');
+  const rotXHandle = document.getElementById('rotate-x-handle');
+  const rotYHandle = document.getElementById('rotate-y-handle');
 
   if (state.selectedSticks.length === 0) {
     toolbar.classList.remove('visible');
-    rotOverlay.style.display = 'none';
+    rotXHandle.style.display = 'none';
+    rotYHandle.style.display = 'none';
     return;
   }
 
@@ -785,10 +768,12 @@ function updateSelectionHighlights() {
 
 function positionCanvaElementsScreen(targetMesh) {
   const toolbar = document.getElementById('canva-toolbar');
-  const rotOverlay = document.getElementById('rotation-handle-overlay');
+  const rotXHandle = document.getElementById('rotate-x-handle');
+  const rotYHandle = document.getElementById('rotate-y-handle');
 
   toolbar.classList.add('visible');
-  rotOverlay.style.display = 'flex';
+  rotXHandle.style.display = 'flex';
+  rotYHandle.style.display = 'flex';
 
   const pos = targetMesh.position.clone();
   pos.project(camera);
@@ -799,9 +784,13 @@ function positionCanvaElementsScreen(targetMesh) {
   const x = (pos.x * hw) + hw;
   const y = -(pos.y * hh) + hh;
 
-  // Position Rotation Ring slightly above object center
-  rotOverlay.style.left = `${x}px`;
-  rotOverlay.style.top = `${y - 45}px`;
+  // Y handle (spin/putar) sits right at the middle of the stick
+  rotYHandle.style.left = `${x}px`;
+  rotYHandle.style.top = `${y}px`;
+
+  // X handle (miring/tilt) sits beside the stick
+  rotXHandle.style.left = `${x + 55}px`;
+  rotXHandle.style.top = `${y}px`;
 
   // Position Desktop Floating Toolbar clamped within viewport
   if (window.innerWidth > 768) {
@@ -917,10 +906,22 @@ function onPointerMove(e) {
   mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
   raycaster.setFromCamera(mouse, camera);
 
-  if (state.isRotatingStick && state.selectedSticks.length > 0) {
+  if (state.rotateAxis && state.selectedSticks.length > 0) {
     const stick = state.selectedSticks[0];
+    const deltaX = e.clientX - state.lastPointerX;
+    const deltaY = e.clientY - state.lastPointerY;
+    state.lastPointerX = e.clientX;
+    state.lastPointerY = e.clientY;
+
     if (!stick.userData.isLocked) {
-      stick.rotation.y += 0.05;
+      const sensitivity = 0.012;
+      if (state.rotateAxis === 'x') {
+        // Geser tangan ke atas (deltaY negatif) -> tongkat miring ke atas
+        stick.rotation.x -= deltaY * sensitivity;
+      } else if (state.rotateAxis === 'z') {
+        // Geser ke kanan (deltaX positif) -> tongkat miring/berputar ke kanan
+        stick.rotation.z -= deltaX * sensitivity;
+      }
       updateSelectionHighlights();
     }
     return;
@@ -942,9 +943,9 @@ function onPointerMove(e) {
 }
 
 function onPointerUp() {
-  if (state.isDraggingStick || state.isRotatingStick) {
+  if (state.isDraggingStick || state.rotateAxis) {
     state.isDraggingStick = false;
-    state.isRotatingStick = false;
+    state.rotateAxis = null;
     state.draggedStick = null;
     snapVisualMarker.visible = false;
     controls.enabled = true; // Re-enable camera orbit
