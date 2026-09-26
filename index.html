@@ -62,7 +62,7 @@ canvas { outline: none; display: block; touch-action: none; }
   #canva-toolbar {
     left: 50% !important;
     top: auto !important;
-    bottom: 84px !important;
+    bottom: 90px !important;
     transform: translateX(-50%) !important;
     width: 94%;
     max-width: 440px;
@@ -88,7 +88,7 @@ canvas { outline: none; display: block; touch-action: none; }
 }
 </style>
 </head>
-<body class="bg-zinc-950 text-zinc-100 h-screen w-screen flex flex-col">
+<body class="bg-zinc-950 text-zinc-100 h-[100dvh] w-screen flex flex-col overflow-hidden pb-16 md:pb-0">
 
 <!-- Top Navigation Bar -->
 <header class="bg-zinc-900/90 backdrop-blur border-b border-zinc-800 h-14 px-4 flex items-center justify-between shrink-0 z-30">
@@ -191,19 +191,25 @@ canvas { outline: none; display: block; touch-action: none; }
 
     <!-- HUD Overlay -->
     <div class="canvas-hud absolute top-4 left-4 right-4 flex items-center justify-between pointer-events-none">
-      <div class="bg-zinc-900/90 backdrop-blur border border-zinc-800 px-4 py-2.5 rounded-2xl shadow-2xl pointer-events-auto flex items-center gap-4">
+      <div class="bg-zinc-900/90 backdrop-blur border border-zinc-800 px-3 md:px-4 py-2 md:py-2.5 rounded-2xl shadow-2xl pointer-events-auto flex items-center gap-3 md:gap-4">
         <div>
-          <span class="text-[10px] text-zinc-400 uppercase font-semibold block">Total Tongkat</span>
-          <span id="hud-stick-count" class="text-base font-bold font-display text-amber-400">0 batang</span>
+          <span class="text-[9px] md:text-[10px] text-zinc-400 uppercase font-semibold block">Total Tongkat</span>
+          <span id="hud-stick-count" class="text-sm md:text-base font-bold font-display text-amber-400">0 batang</span>
         </div>
-        <div class="h-7 w-px bg-zinc-800"></div>
+        <div class="h-6 md:h-7 w-px bg-zinc-800"></div>
         <div>
-          <span class="text-[10px] text-zinc-400 uppercase font-semibold block">Mode Interaksi</span>
-          <span id="hud-active-mode" class="text-xs font-bold font-mono text-emerald-400 flex items-center gap-1">
-            <i class="fa-solid fa-hand-pointer text-[10px]"></i> Canva Drag & Snap
+          <span class="text-[9px] md:text-[10px] text-zinc-400 uppercase font-semibold block">Mode Interaksi</span>
+          <span id="hud-active-mode" class="text-[11px] md:text-xs font-bold font-mono text-emerald-400 flex items-center gap-1">
+            <i class="fa-solid fa-hand-pointer text-[10px]"></i> Drag & Snap
           </span>
         </div>
       </div>
+
+      <!-- Floating Quick Add Button for Mobile -->
+      <button onclick="openMobileSheet('sheet-sticks')" class="md:hidden pointer-events-auto bg-gradient-to-r from-amber-500 to-amber-600 text-zinc-950 font-bold px-3 py-2 rounded-2xl shadow-xl shadow-amber-500/20 flex items-center gap-1.5 text-xs">
+        <i class="fa-solid fa-plus text-sm"></i>
+        <span>Tambah</span>
+      </button>
 
       <!-- Quick Hint -->
       <div class="hidden sm:flex bg-zinc-900/90 backdrop-blur border border-zinc-800 px-3 py-2 rounded-2xl shadow-2xl text-[11px] text-zinc-300 items-center gap-2">
@@ -260,27 +266,37 @@ canvas { outline: none; display: block; touch-action: none; }
   </main>
 </div>
 
-<!-- Mobile Bottom Navigation Bar -->
-<div class="md:hidden bg-zinc-900 border-t border-zinc-800 px-3 py-2 flex items-center justify-around z-30 shrink-0">
-  <button onclick="openMobileSheet('sheet-sticks')" class="flex flex-col items-center gap-1 text-zinc-400 hover:text-amber-400 text-[10px] font-semibold">
-    <i class="fa-solid fa-cubes text-base text-amber-500"></i>
+<!-- Mobile Bottom Navigation Bar (Fixed for Mobile Browsers) -->
+<div class="md:hidden fixed bottom-0 left-0 right-0 bg-zinc-900/95 backdrop-blur-lg border-t border-zinc-800 px-3 py-2.5 flex items-center justify-around z-40 shrink-0 shadow-2xl">
+  <button onclick="openMobileSheet('sheet-sticks')" class="flex flex-col items-center gap-1 text-zinc-300 hover:text-amber-400 text-[10px] font-semibold active:scale-95 transition">
+    <div class="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+      <i class="fa-solid fa-cubes text-sm"></i>
+    </div>
     <span>Objek</span>
   </button>
-  <button onclick="openMobileSheet('sheet-colors')" class="flex flex-col items-center gap-1 text-zinc-400 hover:text-amber-400 text-[10px] font-semibold">
-    <i class="fa-solid fa-palette text-base text-amber-500"></i>
+  <button onclick="openMobileSheet('sheet-colors')" class="flex flex-col items-center gap-1 text-zinc-300 hover:text-amber-400 text-[10px] font-semibold active:scale-95 transition">
+    <div class="w-8 h-8 rounded-xl bg-zinc-800 flex items-center justify-center text-amber-400">
+      <i class="fa-solid fa-palette text-sm"></i>
+    </div>
     <span>Warna</span>
   </button>
-  <button onclick="openMobileSheet('sheet-presets')" class="flex flex-col items-center gap-1 text-zinc-400 hover:text-amber-400 text-[10px] font-semibold">
-    <i class="fa-solid fa-campground text-base text-amber-500"></i>
+  <button onclick="openMobileSheet('sheet-presets')" class="flex flex-col items-center gap-1 text-zinc-300 hover:text-amber-400 text-[10px] font-semibold active:scale-95 transition">
+    <div class="w-8 h-8 rounded-xl bg-zinc-800 flex items-center justify-center text-amber-400">
+      <i class="fa-solid fa-campground text-sm"></i>
+    </div>
     <span>Preset</span>
   </button>
-  <button onclick="openMobileSheet('sheet-camera')" class="flex flex-col items-center gap-1 text-zinc-400 hover:text-amber-400 text-[10px] font-semibold">
-    <i class="fa-solid fa-video text-base text-amber-500"></i>
+  <button onclick="openMobileSheet('sheet-camera')" class="flex flex-col items-center gap-1 text-zinc-300 hover:text-amber-400 text-[10px] font-semibold active:scale-95 transition">
+    <div class="w-8 h-8 rounded-xl bg-zinc-800 flex items-center justify-center text-amber-400">
+      <i class="fa-solid fa-video text-sm"></i>
+    </div>
     <span>Kamera</span>
   </button>
-  <button onclick="openAdvancedSettings()" class="flex flex-col items-center gap-1 text-zinc-400 hover:text-amber-400 text-[10px] font-semibold">
-    <i class="fa-solid fa-sliders text-base text-amber-500"></i>
-    <span>Lanjutan</span>
+  <button onclick="openAdvancedSettings()" class="flex flex-col items-center gap-1 text-zinc-300 hover:text-amber-400 text-[10px] font-semibold active:scale-95 transition">
+    <div class="w-8 h-8 rounded-xl bg-zinc-800 flex items-center justify-center text-amber-400">
+      <i class="fa-solid fa-sliders text-sm"></i>
+    </div>
+    <span>XYZ</span>
   </button>
 </div>
 
