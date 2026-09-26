@@ -2,156 +2,110 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PioneerCraft - Studio Rakit Tongkat Pioneering 3D</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>PioneerCraft - Studio Rakit Tongkat Pioneering 3D (Canva UX)</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <style>
-body{font-family:'Plus Jakarta Sans',sans-serif;user-select:none;overflow:hidden}
-.font-display{font-family:'Space Grotesk',sans-serif}
-::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:#09090b}::-webkit-scrollbar-thumb{background:#27272a;border-radius:4px}::-webkit-scrollbar-thumb:hover{background:#3f3f46}
-canvas{outline:none;display:block}
-.wood-pattern{background-color:#09090b;background-image:radial-gradient(#27272a 1.5px,transparent 1.5px);background-size:16px 16px}
-.view-btn-active{background-color:#f59e0b!important;color:#09090b!important;border-color:#f59e0b!important;font-weight:700!important}
-.tool-active{border-color:#f59e0b!important;background:#f59e0b1a!important;color:#fbbf24!important;box-shadow:0 8px 24px #f59e0b14}
-.stick-option-active{border-color:#f59e0b!important;background:#f59e0b1a!important;color:#fbbf24!important;font-weight:700!important}
+body { font-family: 'Plus Jakarta Sans', sans-serif; user-select: none; overflow: hidden; touch-action: manipulation; }
+.font-display { font-family: 'Space Grotesk', sans-serif; }
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: #09090b; }
+::-webkit-scrollbar-thumb { background: #27272a; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+canvas { outline: none; display: block; touch-action: none; }
+.wood-pattern { background-color: #09090b; background-image: radial-gradient(#27272a 1.5px, transparent 1.5px); background-size: 16px 16px; }
+.view-btn-active { background-color: #f59e0b !important; color: #09090b !important; border-color: #f59e0b !important; font-weight: 700 !important; }
+.stick-option-active { border-color: #f59e0b !important; background: #f59e0b1a !important; color: #fbbf24 !important; font-weight: 700 !important; }
 
-@media (max-width: 1023px){
-  body{overflow:hidden}
-  header{height:52px!important;min-height:52px}
-  header>div:first-child p{display:none}
-  header h1{font-size:14px!important}
-  header h1 .text\[10px\]{display:none}
-  header .w-9{width:32px;height:32px;font-size:16px}
-  .mobile-sidebar{max-height:38vh!important;min-height:0;overflow-y:auto}
-  main{min-height:62vh}
-  #canvas-container{min-height:62vh}
-  .canvas-hud{top:8px!important;left:8px!important;right:8px!important}
-  .canvas-hud .secondary-hud{display:none}
+/* Canva-style Floating Contextual Toolbar */
+#canva-toolbar {
+  position: absolute;
+  z-index: 40;
+  display: none;
+  background: rgba(24, 24, 27, 0.94);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  border-radius: 16px;
+  padding: 6px 10px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  transition: opacity 0.15s ease;
 }
-@media (max-width: 640px){
-  header .bg-zinc-800 span{display:none}
-  header .bg-zinc-800{padding-left:8px!important;padding-right:8px!important}
-  .canvas-hud>div:first-child{padding:8px 10px!important}
-  .canvas-hud .font-display{font-size:13px}
+#canva-toolbar.visible { display: flex; align-items: center; gap: 6px; }
 
-  .mobile-sidebar{max-height:34vh!important}
-  main,#canvas-container{min-height:66vh}
-  .stick-option{min-height:46px}
-  #color-palette-container{grid-template-columns:repeat(8,minmax(0,1fr))!important}
-  .mobile-camera{top:62px!important;right:8px!important}
-  .mobile-camera button{min-width:38px;min-height:28px}
-  #toast{left:12px;right:12px;bottom:12px}
-  #inspector-panel,#multi-select-panel{left:8px!important;right:8px!important;bottom:8px!important;max-width:none!important}
+/* Canvas rotation handle overlay */
+#rotation-handle-overlay {
+  position: absolute;
+  z-index: 38;
+  display: none;
+  width: 44px;
+  height: 44px;
+  margin-left: -22px;
+  margin-top: -22px;
+  background: rgba(245, 158, 11, 0.2);
+  border: 2px dashed #f59e0b;
+  border-radius: 50%;
+  cursor: grab;
+  align-items: center;
+  justify-content: center;
+  color: #fbbf24;
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.4);
+  touch-action: none;
 }
+#rotation-handle-overlay:active { cursor: grabbing; background: rgba(245, 158, 11, 0.4); scale: 1.1; }
 
-/* ── Rotation Gizmo (SVG overlay, kayak Canva) ── */
-#rotation-gizmo{
-  position:absolute;
-  pointer-events:none;
-  z-index:25;
-  display:none;
-}
-#rotation-gizmo svg { overflow:visible; }
-.gizmo-ring{
-  fill:none;stroke:#f59e0b;stroke-width:2.5;
-  stroke-dasharray:6 4;
-  opacity:.85;
-  cursor:grab;
-  pointer-events:stroke;
-}
-.gizmo-ring:hover,.gizmo-ring.dragging{stroke:#fbbf24;stroke-width:3;opacity:1;}
-.gizmo-handle{
-  fill:#f59e0b;stroke:#09090b;stroke-width:1.5;
-  cursor:grab;pointer-events:all;
-  transition:fill .15s;
-}
-.gizmo-handle:hover,.gizmo-handle.dragging{fill:#fbbf24;}
-#gizmo-degree-label{
-  position:absolute;
-  background:#09090b;
-  color:#f59e0b;
-  font-family:'Space Grotesk',sans-serif;
-  font-size:11px;font-weight:700;
-  padding:2px 7px;border-radius:6px;
-  border:1px solid #f59e0b55;
-  pointer-events:none;
-  white-space:nowrap;
-  display:none;
-  transform:translate(-50%,-120%);
+/* Mobile Bottom Navigation & Sheets */
+@media (max-width: 768px) {
+  #canva-toolbar {
+    left: 50% !important;
+    top: auto !important;
+    bottom: 84px !important;
+    transform: translateX(-50%) !important;
+    width: 94%;
+    max-width: 440px;
+    justify-content: space-around;
+    padding: 8px 10px;
+  }
 }
 
-/* ── Inspector Panel (koordinat & rotasi tongkat terpilih) ── */
-#inspector-panel,#multi-select-panel{
-  position:absolute;
-  bottom:24px;left:50%;
-  transform:translateX(-50%);
-  z-index:30;
-  background:#18181b;
-  border:1px solid #3f3f46;
-  border-radius:16px;
-  padding:12px 14px 10px;
-  min-width:340px;
-  box-shadow:0 8px 32px #0008;
-  display:none;
-  pointer-events:auto;
-  user-select:none;
+.bottom-sheet {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translateY(100%);
 }
-#inspector-panel.visible,#multi-select-panel.visible{display:block;}
-.inspector-field{
-  display:flex;align-items:center;gap:6px;
+.bottom-sheet.open {
+  transform: translateY(0);
 }
-.inspector-field label{
-  font-size:10px;font-weight:700;
-  color:#71717a;text-transform:uppercase;
-  width:14px;text-align:center;
-  flex-shrink:0;
-}
-.inspector-field input{
-  flex:1;
-  background:#09090b;
-  border:1px solid #3f3f46;
-  color:#f4f4f5;
-  font-size:12px;font-family:'Space Grotesk',monospace;
-  font-weight:600;
-  border-radius:8px;
-  padding:4px 8px;
-  outline:none;
-  text-align:right;
-  min-width:0;
-  transition:border-color .15s;
-}
-.inspector-field input:focus{border-color:#f59e0b;color:#fbbf24;}
-.inspector-sep{width:1px;height:28px;background:#27272a;flex-shrink:0;}
 
-/* Selected stick highlight ring drawn in Three.js scene via userData.isSelected */
+/* Advanced Settings Panel Floating (Backdrop-free) */
+#advanced-settings-modal {
+  display: none;
+}
+#advanced-settings-modal.visible {
+  display: block;
+}
 </style>
 </head>
 <body class="bg-zinc-950 text-zinc-100 h-screen w-screen flex flex-col">
+
+<!-- Top Navigation Bar -->
 <header class="bg-zinc-900/90 backdrop-blur border-b border-zinc-800 h-14 px-4 flex items-center justify-between shrink-0 z-30">
   <div class="flex items-center gap-3">
-    <div class="w-9 h-9 rounded-lg flex items-center justify-center shadow-lg shadow-amber-500/20 overflow-hidden">
-      <svg viewBox="0 0 48 48" width="36" height="36" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="24" cy="24" r="23" fill="#f59e0b"/>
-        <circle cx="24" cy="24" r="23" fill="none" stroke="#b45309" stroke-width="2"/>
-        <g stroke="#78350f" stroke-width="3.4" stroke-linecap="round">
-          <line x1="10" y1="34" x2="34" y2="10"/>
-          <line x1="10" y1="14" x2="34" y2="38"/>
-          <line x1="7" y1="24" x2="41" y2="24"/>
-        </g>
-        <g fill="#ef4444" stroke="#78350f" stroke-width="1">
-          <circle cx="24" cy="24" r="3"/>
-        </g>
-      </svg>
+    <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/20">
+      <i class="fa-solid fa-shapes text-zinc-950 font-black text-lg"></i>
     </div>
     <div>
-      <h1 class="font-display font-bold text-lg tracking-tight text-white flex items-center gap-2 leading-none">PIONEER<span class="text-amber-500">CRAFT</span><span class="text-[10px] uppercase font-mono px-2 py-0.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-md">STUDIO 3D</span></h1>
-      <p class="text-[11px] text-zinc-400 font-medium">Simulator Rakit Tongkat Pioneering 3D Interaktif</p>
+      <h1 class="font-display font-bold text-base md:text-lg tracking-tight text-white flex items-center gap-2 leading-none">
+        PIONEER<span class="text-amber-500">CRAFT</span>
+        <span class="text-[10px] uppercase font-mono px-2 py-0.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-md hidden sm:inline-block">CANVA 3D</span>
+      </h1>
+      <p class="text-[11px] text-zinc-400 font-medium hidden sm:block">Perancang Pioneering Instant Tanpa Koordinat</p>
     </div>
   </div>
+
+  <!-- Camera Presets -->
   <div class="hidden md:flex items-center gap-1 bg-zinc-950 p-1 rounded-xl border border-zinc-800 text-xs font-semibold">
     <span class="text-[10px] text-zinc-500 uppercase px-2 font-mono">Kamera:</span>
     <button onclick="setCameraView('3d')" id="view-btn-3d" class="view-btn view-btn-active px-2.5 py-1 rounded-lg text-zinc-300 hover:text-white hover:bg-zinc-800 border border-transparent transition"><i class="fa-solid fa-cube text-[10px] mr-1"></i>3D Iso</button>
@@ -160,1049 +114,1207 @@ canvas{outline:none;display:block}
     <button onclick="setCameraView('left')" id="view-btn-left" class="view-btn px-2.5 py-1 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 border border-transparent transition">Kiri</button>
     <button onclick="setCameraView('right')" id="view-btn-right" class="view-btn px-2.5 py-1 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 border border-transparent transition">Kanan</button>
     <button onclick="setCameraView('top')" id="view-btn-top" class="view-btn px-2.5 py-1 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 border border-transparent transition">Atas</button>
-    <button onclick="setCameraView('bottom')" id="view-btn-bottom" class="view-btn px-2.5 py-1 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 border border-transparent transition">Bawah</button>
   </div>
+
+  <!-- History & Actions -->
   <div class="flex items-center gap-2">
-    <button onclick="toggleExplodeView()" id="btn-explode" class="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-amber-400 rounded-xl font-semibold text-xs border border-zinc-700 transition flex items-center gap-1.5 shadow"><i class="fa-solid fa-layer-group text-xs"></i><span>Explode Step</span></button>
-    <button onclick="clearStudioScene()" title="Reset Kanvas" class="p-1.5 bg-zinc-800 hover:bg-red-500/20 text-zinc-400 hover:text-red-400 border border-zinc-700 rounded-xl transition"><i class="fa-solid fa-trash-can text-sm px-1"></i></button>
-  </div>
-</header>
-<div class="flex-1 flex flex-col lg:flex-row relative overflow-hidden">
-<aside class="mobile-sidebar w-full lg:w-80 bg-zinc-900 border-r border-zinc-800 flex flex-col z-20 shrink-0 max-h-[42vh] lg:max-h-none overflow-y-auto">
-  <div class="p-3.5 border-b border-zinc-800">
-    <label class="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block mb-2">Mode Alat</label>
-    <div class="grid grid-cols-4 gap-2">
-      <button id="tool-place" onclick="setTool('place')" class="tool-active p-2.5 rounded-xl border font-bold text-xs flex flex-col items-center gap-1 transition"><i class="fa-solid fa-plus text-sm"></i>Pasang</button>
-      <button id="tool-select" onclick="setTool('select')" class="p-2.5 rounded-xl border border-zinc-800 bg-zinc-950 text-zinc-400 hover:border-zinc-700 font-bold text-xs flex flex-col items-center gap-1 transition"><i class="fa-solid fa-arrow-pointer text-sm"></i>Pilih</button>
-      <button id="tool-delete" onclick="setTool('delete')" class="p-2.5 rounded-xl border border-zinc-800 bg-zinc-950 text-zinc-400 hover:border-zinc-700 font-bold text-xs flex flex-col items-center gap-1 transition"><i class="fa-solid fa-eraser text-sm"></i>Hapus</button>
-      <button id="tool-paint" onclick="setTool('paint')" class="p-2.5 rounded-xl border border-zinc-800 bg-zinc-950 text-zinc-400 hover:border-zinc-700 font-bold text-xs flex flex-col items-center gap-1 transition"><i class="fa-solid fa-palette text-sm"></i>Cat</button>
-    </div>
-    <button id="btn-multi-select" onclick="toggleMultiSelectMode()" class="w-full mt-2 flex items-center justify-between bg-zinc-950 border border-zinc-800 hover:border-zinc-700 rounded-xl px-3 py-2 transition">
-      <span class="text-[11px] font-semibold text-zinc-400 flex items-center gap-1.5"><i class="fa-solid fa-object-group text-xs"></i>Pilih Banyak Tongkat</span>
-      <span id="multi-select-switch" class="relative w-9 h-5 rounded-full bg-zinc-700 transition-colors shrink-0">
-        <span id="multi-select-knob" class="absolute top-0.5 left-0.5 w-4 h-4 bg-zinc-300 rounded-full transition-transform"></span>
-      </span>
+    <button onclick="toggleMultiSelectMode()" id="btn-multi-select" title="Pilih Banyak Tongkat" class="p-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 rounded-xl transition text-xs flex items-center gap-1.5">
+      <i class="fa-solid fa-object-group text-amber-500"></i>
+      <span class="hidden md:inline font-semibold">Pilih Banyak</span>
+    </button>
+    <div class="h-6 w-px bg-zinc-800"></div>
+    <button onclick="undo()" id="btn-undo" title="Urungkan (Ctrl+Z)" class="p-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-amber-400 border border-zinc-700 rounded-xl transition text-xs flex items-center gap-1">
+      <i class="fa-solid fa-rotate-left"></i> <span class="hidden sm:inline">Undo</span>
+    </button>
+    <button onclick="redo()" id="btn-redo" title="Ulangi (Ctrl+Y)" class="p-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-amber-400 border border-zinc-700 rounded-xl transition text-xs flex items-center gap-1">
+      <i class="fa-solid fa-rotate-right"></i> <span class="hidden sm:inline">Redo</span>
+    </button>
+    <div class="h-6 w-px bg-zinc-800"></div>
+    <button onclick="clearStudioScene()" title="Bersihkan Kanvas" class="p-2 bg-zinc-800 hover:bg-red-500/20 text-zinc-400 hover:text-red-400 border border-zinc-700 rounded-xl transition text-xs">
+      <i class="fa-solid fa-trash-can"></i>
     </button>
   </div>
-  <div class="p-3.5 border-b border-zinc-800">
-    <div class="flex items-center justify-between mb-2"><label class="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Jenis Tongkat</label><span class="text-[10px] text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 font-mono">PIONEERING</span></div>
-    <div class="grid grid-cols-2 gap-2" id="stick-selector-container"></div>
-  </div>
-  <div class="p-3.5 border-b border-zinc-800">
-    <div class="flex items-center justify-between mb-2"><label class="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Warna Tongkat</label><span id="selected-color-label" class="text-[11px] text-amber-400 font-semibold truncate">Kayu Natural</span></div>
-    <div class="grid grid-cols-6 gap-2" id="color-palette-container"></div>
-  </div>
-  <div class="p-3.5 border-b border-zinc-800">
-    <label class="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block mb-2">Rotasi Tongkat</label>
-    <div class="grid grid-cols-3 gap-2">
-      <button onclick="rotateStick('x')" class="p-2 bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 rounded-xl text-xs font-semibold">X +90°</button>
-      <button onclick="rotateStick('y')" class="p-2 bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 rounded-xl text-xs font-semibold">Y +90°</button>
-      <button onclick="rotateStick('z')" class="p-2 bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 rounded-xl text-xs font-semibold">Z +90°</button>
-    </div>
-    <div class="grid grid-cols-2 gap-2 mt-2">
-      <button onclick="rotateStick('z15')" class="p-2 bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 rounded-xl text-xs font-semibold">Z +15°</button>
-      <button onclick="rotateStick('z-15')" class="p-2 bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 rounded-xl text-xs font-semibold">Z −15°</button>
-    </div>
-  </div>
-  <div class="p-3.5 border-b border-zinc-800">
-    <div class="flex items-center justify-between mb-2"><label class="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Titik Sambungan</label><span class="text-[10px] text-red-400 bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20 font-mono">6 TITIK / TONGKAT</span></div>
-    <p class="text-[10px] leading-relaxed text-zinc-500">Titik merah di sisi tongkat adalah node sambungan. Arahkan tongkat baru ke titik tersebut untuk snap otomatis.</p>
-  </div>
-  <div class="p-3.5">
-    <label class="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block mb-2">Preset Struktur Pioneering</label>
-    <div class="grid grid-cols-2 gap-2">
-      <button onclick="loadPreset('tower')" class="p-2 bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 rounded-xl text-xs font-semibold text-left text-zinc-300 flex items-center gap-2 transition"><span>🗼</span>Menara</button>
-      <button onclick="loadPreset('bridge')" class="p-2 bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 rounded-xl text-xs font-semibold text-left text-zinc-300 flex items-center gap-2 transition"><span>🌉</span>Jembatan</button>
-      <button onclick="loadPreset('rack')" class="p-2 bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 rounded-xl text-xs font-semibold text-left text-zinc-300 flex items-center gap-2 transition"><span>🪜</span>Rak</button>
-      <button onclick="loadPreset('tripod')" class="p-2 bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 rounded-xl text-xs font-semibold text-left text-zinc-300 flex items-center gap-2 transition"><span>🔺</span>Tripod</button>
-      <button onclick="loadPreset('triangle')" class="p-2 bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 rounded-xl text-xs font-semibold text-left text-zinc-300 flex items-center gap-2 transition"><span>📐</span>Segitiga</button>
-      <button onclick="loadPreset('starter')" class="p-2 bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 rounded-xl text-xs font-semibold text-left text-zinc-300 flex items-center gap-2 transition"><span>🪵</span>Starter</button>
-    </div>
-  </div>
-</aside>
-<main class="flex-1 relative wood-pattern flex items-center justify-center">
-  <div id="canvas-container" class="w-full h-full cursor-grab active:cursor-grabbing"></div>
-  <div class="canvas-hud absolute top-4 left-4 right-4 flex items-center justify-between pointer-events-none">
-    <div class="bg-zinc-900/90 backdrop-blur border border-zinc-800 px-4 py-2.5 rounded-2xl shadow-2xl pointer-events-auto flex items-center gap-4">
-      <div><span class="text-[10px] text-zinc-400 uppercase font-semibold block">Total Tongkat</span><span id="hud-stick-count" class="text-base font-bold font-display text-amber-400">0 batang</span></div>
-      <div class="h-7 w-px bg-zinc-800"></div>
-      <div><span class="text-[10px] text-zinc-400 uppercase font-semibold block">Sudut Kamera</span><span id="hud-camera-angle" class="text-xs font-bold font-mono text-zinc-300">3D Isometric</span></div>
-    </div>
-    <div class="secondary-hud bg-zinc-900/90 backdrop-blur border border-zinc-800 p-1.5 rounded-2xl shadow-2xl pointer-events-auto flex items-center gap-1">
-      <button onclick="rotateStick('y')" title="Putar Y 90°" class="p-2 hover:bg-zinc-800 text-zinc-300 hover:text-amber-400 rounded-xl transition flex items-center gap-1 font-semibold text-xs px-3"><i class="fa-solid fa-rotate-right"></i><span>Putar Y</span></button>
-      <div class="h-5 w-px bg-zinc-800"></div>
-      <button onclick="undoLastStick()" title="Urungkan pemasangan terakhir" class="p-2 hover:bg-zinc-800 text-zinc-300 hover:text-amber-400 rounded-xl transition flex items-center gap-1 font-semibold text-xs px-3"><i class="fa-solid fa-rotate-left"></i><span>Undo</span></button>
-    </div>
-  </div>
-  <div class="mobile-camera md:hidden absolute top-20 right-4 bg-zinc-900/90 backdrop-blur border border-zinc-800 p-1 rounded-xl shadow-xl flex flex-col gap-1 z-10">
-    <button onclick="setCameraView('3d')" class="px-2 py-1 text-[10px] font-bold rounded bg-zinc-800 text-amber-400">3D</button>
-    <button onclick="setCameraView('front')" class="px-2 py-1 text-[10px] font-bold rounded hover:bg-zinc-800 text-zinc-300">Dpn</button>
-    <button onclick="setCameraView('back')" class="px-2 py-1 text-[10px] font-bold rounded hover:bg-zinc-800 text-zinc-300">Blk</button>
-    <button onclick="setCameraView('left')" class="px-2 py-1 text-[10px] font-bold rounded hover:bg-zinc-800 text-zinc-300">Kiri</button>
-    <button onclick="setCameraView('right')" class="px-2 py-1 text-[10px] font-bold rounded hover:bg-zinc-800 text-zinc-300">Knr</button>
-    <button onclick="setCameraView('top')" class="px-2 py-1 text-[10px] font-bold rounded hover:bg-zinc-800 text-zinc-300">Ats</button>
-    <button onclick="setCameraView('bottom')" class="px-2 py-1 text-[10px] font-bold rounded hover:bg-zinc-800 text-zinc-300">Bwh</button>
-  </div>
-  <!-- Rotation Gizmo SVG overlay -->
-  <div id="rotation-gizmo">
-    <svg id="gizmo-svg" width="120" height="120" viewBox="-60 -60 120 120">
-      <!-- Ring X (merah, rotasi X) -->
-      <circle class="gizmo-ring" id="ring-x" r="44" stroke="#ef4444" data-axis="x"/>
-      <!-- Ring Z (biru, rotasi Z) -->
-      <ellipse class="gizmo-ring" id="ring-z" rx="44" ry="18" stroke="#3b82f6" data-axis="z"/>
-      <!-- Ring Y (hijau, rotasi Y — vertikal) -->
-      <ellipse class="gizmo-ring" id="ring-y" rx="18" ry="44" stroke="#22c55e" data-axis="y"/>
-      <!-- Handle dot tengah -->
-      <circle class="gizmo-handle" id="gizmo-center" r="6"/>
-    </svg>
-    <div id="gizmo-degree-label">0°</div>
-  </div>
+</header>
 
-  <!-- Inspector panel: muncul saat tongkat dipilih -->
-  <div id="inspector-panel">
-    <div class="flex items-center justify-between mb-2.5">
-      <div class="flex items-center gap-2">
-        <i class="fa-solid fa-sliders text-amber-400 text-xs"></i>
-        <span class="text-[11px] font-bold text-zinc-300 uppercase tracking-wider">Inspector</span>
-        <span id="inspector-stick-label" class="text-[10px] text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 font-mono">–</span>
+<div class="flex-1 flex flex-col md:flex-row relative overflow-hidden">
+  
+  <!-- Left Sidebar (Desktop View) -->
+  <aside class="hidden md:flex w-80 bg-zinc-900 border-r border-zinc-800 flex-col z-20 shrink-0 overflow-y-auto">
+    
+    <!-- Stick Selector -->
+    <div class="p-4 border-b border-zinc-800">
+      <div class="flex items-center justify-between mb-3">
+        <label class="text-[11px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+          <i class="fa-solid fa-cubes text-amber-500"></i> Perpustakaan Tongkat
+        </label>
+        <span class="text-[10px] text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 font-mono">PIONEERING</span>
       </div>
-      <button onclick="deselectStick()" class="text-zinc-500 hover:text-red-400 transition text-xs"><i class="fa-solid fa-xmark"></i></button>
+      <p class="text-xs text-zinc-400 mb-3">Klik tongkat untuk langsung memasang di kanvas:</p>
+      <div class="grid grid-cols-2 gap-2" id="stick-selector-container"></div>
     </div>
-    <!-- Posisi -->
-    <div class="mb-2">
-      <div class="text-[10px] text-zinc-500 uppercase font-bold tracking-wider mb-1.5">Posisi</div>
-      <div class="flex items-center gap-2">
-        <div class="inspector-field flex-1">
-          <label style="color:#ef4444">X</label>
-          <input id="inp-pos-x" type="number" step="0.5" onchange="applyInspector()" onkeydown="inspectorKey(event)"/>
-        </div>
-        <div class="inspector-sep"></div>
-        <div class="inspector-field flex-1">
-          <label style="color:#22c55e">Y</label>
-          <input id="inp-pos-y" type="number" step="0.5" onchange="applyInspector()" onkeydown="inspectorKey(event)"/>
-        </div>
-        <div class="inspector-sep"></div>
-        <div class="inspector-field flex-1">
-          <label style="color:#3b82f6">Z</label>
-          <input id="inp-pos-z" type="number" step="0.5" onchange="applyInspector()" onkeydown="inspectorKey(event)"/>
-        </div>
-      </div>
-    </div>
-    <!-- Rotasi -->
-    <div>
-      <div class="text-[10px] text-zinc-500 uppercase font-bold tracking-wider mb-1.5">Rotasi (derajat)</div>
-      <div class="flex items-center gap-2">
-        <div class="inspector-field flex-1">
-          <label style="color:#ef4444">X</label>
-          <input id="inp-rot-x" type="number" step="5" onchange="applyInspector()" onkeydown="inspectorKey(event)"/>
-        </div>
-        <div class="inspector-sep"></div>
-        <div class="inspector-field flex-1">
-          <label style="color:#22c55e">Y</label>
-          <input id="inp-rot-y" type="number" step="5" onchange="applyInspector()" onkeydown="inspectorKey(event)"/>
-        </div>
-        <div class="inspector-sep"></div>
-        <div class="inspector-field flex-1">
-          <label style="color:#3b82f6">Z</label>
-          <input id="inp-rot-z" type="number" step="5" onchange="applyInspector()" onkeydown="inspectorKey(event)"/>
-        </div>
-      </div>
-    </div>
-    <div class="mt-2.5 flex gap-2">
-      <button onclick="resetSelectedRotation()" class="flex-1 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold rounded-xl border border-zinc-700 transition">Reset Rotasi</button>
-      <button onclick="snapSelectedToGround()" class="flex-1 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold rounded-xl border border-zinc-700 transition"><i class="fa-solid fa-arrow-down-to-line text-xs mr-1"></i>Snap ke Lantai</button>
-      <button onclick="duplicateSelected()" title="Duplikat Tongkat" class="px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 text-xs font-semibold rounded-xl border border-amber-500/20 transition"><i class="fa-solid fa-clone text-xs"></i></button>
-      <button onclick="deleteSelected()" title="Hapus Tongkat" class="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-semibold rounded-xl border border-red-500/20 transition"><i class="fa-solid fa-trash text-xs"></i></button>
-    </div>
-  </div>
 
-  <!-- Multi-select panel: muncul saat >1 tongkat dipilih -->
-  <div id="multi-select-panel">
-    <div class="flex items-center justify-between mb-2.5">
-      <div class="flex items-center gap-2">
-        <i class="fa-solid fa-object-group text-amber-400 text-xs"></i>
-        <span class="text-[11px] font-bold text-zinc-300 uppercase tracking-wider">Multi Pilih</span>
-        <span id="multi-select-count" class="text-[10px] text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 font-mono">0 Tongkat</span>
+    <!-- Color Palette -->
+    <div class="p-4 border-b border-zinc-800">
+      <div class="flex items-center justify-between mb-3">
+        <label class="text-[11px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+          <i class="fa-solid fa-palette text-amber-500"></i> Warna Kayu
+        </label>
+        <span id="selected-color-label" class="text-[11px] text-amber-400 font-semibold truncate">Kayu Natural</span>
       </div>
-      <button onclick="deselectStick()" class="text-zinc-500 hover:text-red-400 transition text-xs"><i class="fa-solid fa-xmark"></i></button>
+      <div class="grid grid-cols-6 gap-2" id="color-palette-container"></div>
     </div>
-    <p class="text-[10px] leading-relaxed text-zinc-500 mb-2.5">Aktifkan toggle <strong>Pilih Banyak Tongkat</strong>, lalu klik beberapa tongkat untuk menambah atau menghapusnya dari pilihan.</p>
-    <div class="mb-2.5">
-      <div class="text-[10px] text-zinc-500 uppercase font-bold tracking-wider mb-1.5">Geser Posisi Bersama (Δ)</div>
-      <div class="flex items-center gap-2">
-        <div class="inspector-field flex-1">
-          <label style="color:#ef4444">X</label>
-          <input id="multi-offset-x" type="number" step="0.5" value="0" onkeydown="multiOffsetKey(event)"/>
-        </div>
-        <div class="inspector-sep"></div>
-        <div class="inspector-field flex-1">
-          <label style="color:#22c55e">Y</label>
-          <input id="multi-offset-y" type="number" step="0.5" value="0" onkeydown="multiOffsetKey(event)"/>
-        </div>
-        <div class="inspector-sep"></div>
-        <div class="inspector-field flex-1">
-          <label style="color:#3b82f6">Z</label>
-          <input id="multi-offset-z" type="number" step="0.5" value="0" onkeydown="multiOffsetKey(event)"/>
-        </div>
-      </div>
-      <button onclick="applyGroupOffset()" class="w-full mt-2 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold rounded-xl border border-zinc-700 transition"><i class="fa-solid fa-arrows-up-down-left-right text-xs mr-1.5"></i>Terapkan Geser ke Semua</button>
-    </div>
-    <div class="mb-2.5">
-      <div class="text-[10px] text-zinc-500 uppercase font-bold tracking-wider mb-1.5">Cerminkan / Flip Bersama</div>
+
+    <!-- Presets -->
+    <div class="p-4">
+      <label class="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block mb-3">
+        <i class="fa-solid fa-campground text-amber-500 mr-1"></i> Preset Struktur Utama
+      </label>
       <div class="grid grid-cols-2 gap-2">
-        <button onclick="groupFlipHorizontal()" class="p-2 bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition"><i class="fa-solid fa-arrows-left-right text-xs"></i>Balik Horizontal</button>
-        <button onclick="groupFlipVertical()" class="p-2 bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition"><i class="fa-solid fa-arrows-up-down text-xs"></i>Balik Vertikal</button>
+        <button onclick="loadPreset('tower')" class="p-2.5 bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 rounded-xl text-xs font-semibold text-left text-zinc-300 flex items-center gap-2 transition"><span>🗼</span>Menara</button>
+        <button onclick="loadPreset('bridge')" class="p-2.5 bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 rounded-xl text-xs font-semibold text-left text-zinc-300 flex items-center gap-2 transition"><span>🌉</span>Jembatan</button>
+        <button onclick="loadPreset('rack')" class="p-2.5 bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 rounded-xl text-xs font-semibold text-left text-zinc-300 flex items-center gap-2 transition"><span>🪜</span>Rak Sepatu</button>
+        <button onclick="loadPreset('tripod')" class="p-2.5 bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 rounded-xl text-xs font-semibold text-left text-zinc-300 flex items-center gap-2 transition"><span>🔺</span>Tripod</button>
+        <button onclick="loadPreset('triangle')" class="p-2.5 bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 rounded-xl text-xs font-semibold text-left text-zinc-300 flex items-center gap-2 transition"><span>📐</span>Segitiga</button>
+        <button onclick="loadPreset('starter')" class="p-2.5 bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 rounded-xl text-xs font-semibold text-left text-zinc-300 flex items-center gap-2 transition"><span>🪵</span>Dasar 4 Tongkat</button>
       </div>
     </div>
+  </aside>
+
+  <!-- Main 3D Canvas Area -->
+  <main class="flex-1 relative wood-pattern flex items-center justify-center overflow-hidden">
+    <div id="canvas-container" class="w-full h-full cursor-grab active:cursor-grabbing"></div>
+
+    <!-- Rotation Handle Overlay (Canvas Style) -->
+    <div id="rotation-handle-overlay" title="Seret untuk memutar tongkat">
+      <i class="fa-solid fa-rotate text-sm"></i>
+    </div>
+
+    <!-- HUD Overlay -->
+    <div class="canvas-hud absolute top-4 left-4 right-4 flex items-center justify-between pointer-events-none">
+      <div class="bg-zinc-900/90 backdrop-blur border border-zinc-800 px-4 py-2.5 rounded-2xl shadow-2xl pointer-events-auto flex items-center gap-4">
+        <div>
+          <span class="text-[10px] text-zinc-400 uppercase font-semibold block">Total Tongkat</span>
+          <span id="hud-stick-count" class="text-base font-bold font-display text-amber-400">0 batang</span>
+        </div>
+        <div class="h-7 w-px bg-zinc-800"></div>
+        <div>
+          <span class="text-[10px] text-zinc-400 uppercase font-semibold block">Mode Interaksi</span>
+          <span id="hud-active-mode" class="text-xs font-bold font-mono text-emerald-400 flex items-center gap-1">
+            <i class="fa-solid fa-hand-pointer text-[10px]"></i> Canva Drag & Snap
+          </span>
+        </div>
+      </div>
+
+      <!-- Quick Hint -->
+      <div class="hidden sm:flex bg-zinc-900/90 backdrop-blur border border-zinc-800 px-3 py-2 rounded-2xl shadow-2xl text-[11px] text-zinc-300 items-center gap-2">
+        <i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i>
+        <span>Klik tongkat & seret seperti Canva. Otomatis Magnet Snap!</span>
+      </div>
+    </div>
+
+    <!-- CANVA CONTEXTUAL FLOATING TOOLBAR -->
+    <div id="canva-toolbar" class="pointer-events-auto">
+      <button onclick="rotateSelectedQuick(45)" title="Putar 45°" class="p-2 hover:bg-zinc-800 text-zinc-200 hover:text-amber-400 rounded-xl text-xs font-semibold flex items-center gap-1 transition">
+        <i class="fa-solid fa-rotate-right text-amber-400"></i><span>+45°</span>
+      </button>
+
+      <button onclick="rotateSelectedQuick(90)" title="Putar 90°" class="p-2 hover:bg-zinc-800 text-zinc-200 hover:text-amber-400 rounded-xl text-xs font-semibold flex items-center gap-1 transition">
+        <span>+90°</span>
+      </button>
+
+      <div class="h-5 w-px bg-zinc-800"></div>
+
+      <!-- Duplicate -->
+      <button onclick="duplicateSelected()" title="Duplikat Tongkat" class="p-2 hover:bg-zinc-800 text-zinc-200 hover:text-amber-400 rounded-xl text-xs font-semibold flex items-center gap-1 transition">
+        <i class="fa-solid fa-clone text-amber-400"></i><span>Duplikat</span>
+      </button>
+
+      <!-- Flip -->
+      <button onclick="flipSelectedHorizontal()" title="Balik Horizontal" class="p-2 hover:bg-zinc-800 text-zinc-200 hover:text-amber-400 rounded-xl text-xs font-semibold transition">
+        <i class="fa-solid fa-arrows-left-right"></i>
+      </button>
+      <button onclick="flipSelectedVertical()" title="Balik Vertikal" class="p-2 hover:bg-zinc-800 text-zinc-200 hover:text-amber-400 rounded-xl text-xs font-semibold transition">
+        <i class="fa-solid fa-arrows-up-down"></i>
+      </button>
+
+      <div class="h-5 w-px bg-zinc-800"></div>
+
+      <!-- Lock Toggle -->
+      <button onclick="toggleLockSelected()" id="btn-lock-toggle" title="Kunci / Buka Objek" class="p-2 hover:bg-zinc-800 text-zinc-200 hover:text-amber-400 rounded-xl text-xs font-semibold transition">
+        <i class="fa-solid fa-lock-open"></i>
+      </button>
+
+      <!-- Delete -->
+      <button onclick="deleteSelected()" title="Hapus Objek" class="p-2 hover:bg-red-500/20 text-red-400 hover:text-red-300 rounded-xl text-xs font-semibold transition">
+        <i class="fa-solid fa-trash-can"></i>
+      </button>
+
+      <div class="h-5 w-px bg-zinc-800"></div>
+
+      <!-- Advanced / More Settings -->
+      <button onclick="openAdvancedSettings()" title="Pengaturan Lanjutan (Koordinat XYZ)" class="p-2 hover:bg-zinc-800 text-zinc-300 hover:text-amber-400 rounded-xl text-xs font-semibold transition">
+        <i class="fa-solid fa-ellipsis-vertical"></i>
+      </button>
+    </div>
+
+  </main>
+</div>
+
+<!-- Mobile Bottom Navigation Bar -->
+<div class="md:hidden bg-zinc-900 border-t border-zinc-800 px-3 py-2 flex items-center justify-around z-30 shrink-0">
+  <button onclick="openMobileSheet('sheet-sticks')" class="flex flex-col items-center gap-1 text-zinc-400 hover:text-amber-400 text-[10px] font-semibold">
+    <i class="fa-solid fa-cubes text-base text-amber-500"></i>
+    <span>Objek</span>
+  </button>
+  <button onclick="openMobileSheet('sheet-colors')" class="flex flex-col items-center gap-1 text-zinc-400 hover:text-amber-400 text-[10px] font-semibold">
+    <i class="fa-solid fa-palette text-base text-amber-500"></i>
+    <span>Warna</span>
+  </button>
+  <button onclick="openMobileSheet('sheet-presets')" class="flex flex-col items-center gap-1 text-zinc-400 hover:text-amber-400 text-[10px] font-semibold">
+    <i class="fa-solid fa-campground text-base text-amber-500"></i>
+    <span>Preset</span>
+  </button>
+  <button onclick="openMobileSheet('sheet-camera')" class="flex flex-col items-center gap-1 text-zinc-400 hover:text-amber-400 text-[10px] font-semibold">
+    <i class="fa-solid fa-video text-base text-amber-500"></i>
+    <span>Kamera</span>
+  </button>
+  <button onclick="openAdvancedSettings()" class="flex flex-col items-center gap-1 text-zinc-400 hover:text-amber-400 text-[10px] font-semibold">
+    <i class="fa-solid fa-sliders text-base text-amber-500"></i>
+    <span>Lanjutan</span>
+  </button>
+</div>
+
+<!-- Mobile Bottom Sheets -->
+<div id="sheet-overlay" onclick="closeMobileSheets()" class="fixed inset-0 bg-black/60 z-40 hidden backdrop-blur-sm"></div>
+
+<div id="sheet-sticks" class="bottom-sheet fixed bottom-0 left-0 right-0 bg-zinc-900 border-t border-zinc-800 rounded-t-2xl p-4 z-50 max-h-[60vh] overflow-y-auto">
+  <div class="flex items-center justify-between mb-3">
+    <h3 class="font-bold text-sm text-zinc-200">Pilih Tongkat Pioneering</h3>
+    <button onclick="closeMobileSheets()" class="text-zinc-500 hover:text-zinc-300 p-1"><i class="fa-solid fa-xmark text-base"></i></button>
+  </div>
+  <div class="grid grid-cols-2 gap-2" id="mobile-stick-selector-container"></div>
+</div>
+
+<div id="sheet-colors" class="bottom-sheet fixed bottom-0 left-0 right-0 bg-zinc-900 border-t border-zinc-800 rounded-t-2xl p-4 z-50">
+  <div class="flex items-center justify-between mb-3">
+    <h3 class="font-bold text-sm text-zinc-200">Pilih Warna Kayu</h3>
+    <button onclick="closeMobileSheets()" class="text-zinc-500 hover:text-zinc-300 p-1"><i class="fa-solid fa-xmark text-base"></i></button>
+  </div>
+  <div class="grid grid-cols-6 gap-2" id="mobile-color-palette-container"></div>
+</div>
+
+<div id="sheet-presets" class="bottom-sheet fixed bottom-0 left-0 right-0 bg-zinc-900 border-t border-zinc-800 rounded-t-2xl p-4 z-50">
+  <div class="flex items-center justify-between mb-3">
+    <h3 class="font-bold text-sm text-zinc-200">Muat Preset Struktur</h3>
+    <button onclick="closeMobileSheets()" class="text-zinc-500 hover:text-zinc-300 p-1"><i class="fa-solid fa-xmark text-base"></i></button>
+  </div>
+  <div class="grid grid-cols-2 gap-2">
+    <button onclick="loadPreset('tower'); closeMobileSheets();" class="p-3 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-semibold text-left text-zinc-200">🗼 Menara</button>
+    <button onclick="loadPreset('bridge'); closeMobileSheets();" class="p-3 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-semibold text-left text-zinc-200">🌉 Jembatan</button>
+    <button onclick="loadPreset('rack'); closeMobileSheets();" class="p-3 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-semibold text-left text-zinc-200">🪜 Rak Sepatu</button>
+    <button onclick="loadPreset('tripod'); closeMobileSheets();" class="p-3 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-semibold text-left text-zinc-200">🔺 Tripod</button>
+    <button onclick="loadPreset('triangle'); closeMobileSheets();" class="p-3 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-semibold text-left text-zinc-200">📐 Segitiga</button>
+    <button onclick="loadPreset('starter'); closeMobileSheets();" class="p-3 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-semibold text-left text-zinc-200">🪵 Dasar 4 Tongkat</button>
+  </div>
+</div>
+
+<div id="sheet-camera" class="bottom-sheet fixed bottom-0 left-0 right-0 bg-zinc-900 border-t border-zinc-800 rounded-t-2xl p-4 z-50">
+  <div class="flex items-center justify-between mb-3">
+    <h3 class="font-bold text-sm text-zinc-200">Sudut Kamera</h3>
+    <button onclick="closeMobileSheets()" class="text-zinc-500 hover:text-zinc-300 p-1"><i class="fa-solid fa-xmark text-base"></i></button>
+  </div>
+  <div class="grid grid-cols-3 gap-2">
+    <button onclick="setCameraView('3d'); closeMobileSheets();" class="p-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-semibold">3D Iso</button>
+    <button onclick="setCameraView('front'); closeMobileSheets();" class="p-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-semibold">Depan</button>
+    <button onclick="setCameraView('back'); closeMobileSheets();" class="p-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-semibold">Belakang</button>
+    <button onclick="setCameraView('left'); closeMobileSheets();" class="p-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-semibold">Kiri</button>
+    <button onclick="setCameraView('right'); closeMobileSheets();" class="p-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-semibold">Kanan</button>
+    <button onclick="setCameraView('top'); closeMobileSheets();" class="p-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-semibold">Atas</button>
+  </div>
+</div>
+
+<!-- Advanced Settings Modal (Non-blocking Floating Panel) -->
+<div id="advanced-settings-modal" class="fixed top-16 right-4 z-40 hidden pointer-events-auto">
+  <div class="bg-zinc-900/95 backdrop-blur-md border border-amber-500/30 rounded-2xl w-80 p-4 shadow-2xl">
+    <div class="flex items-center justify-between mb-3 border-b border-zinc-800 pb-2">
+      <div class="flex items-center gap-2">
+        <i class="fa-solid fa-sliders text-amber-500"></i>
+        <h3 class="font-bold text-xs text-zinc-200">Pengaturan Lanjutan (XYZ)</h3>
+      </div>
+      <button onclick="closeAdvancedSettings()" class="text-zinc-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-sm"></i></button>
+    </div>
+
+    <!-- Position Inputs -->
+    <div class="mb-3">
+      <div class="text-[10px] text-zinc-400 uppercase font-bold tracking-wider mb-1.5">Posisi Koordinat (X, Y, Z)</div>
+      <div class="grid grid-cols-3 gap-1.5">
+        <div>
+          <label class="text-[9px] text-red-400 font-bold">X</label>
+          <input id="inp-pos-x" type="number" step="0.5" oninput="applyInspector()" class="w-full bg-zinc-950 border border-zinc-800 text-xs px-2 py-1 rounded-lg text-right font-mono text-white outline-none focus:border-amber-500">
+        </div>
+        <div>
+          <label class="text-[9px] text-green-400 font-bold">Y</label>
+          <input id="inp-pos-y" type="number" step="0.5" oninput="applyInspector()" class="w-full bg-zinc-950 border border-zinc-800 text-xs px-2 py-1 rounded-lg text-right font-mono text-white outline-none focus:border-amber-500">
+        </div>
+        <div>
+          <label class="text-[9px] text-blue-400 font-bold">Z</label>
+          <input id="inp-pos-z" type="number" step="0.5" oninput="applyInspector()" class="w-full bg-zinc-950 border border-zinc-800 text-xs px-2 py-1 rounded-lg text-right font-mono text-white outline-none focus:border-amber-500">
+        </div>
+      </div>
+    </div>
+
+    <!-- Rotation Inputs -->
+    <div class="mb-3">
+      <div class="text-[10px] text-zinc-400 uppercase font-bold tracking-wider mb-1.5">Rotasi Precise (X, Y, Z)</div>
+      <div class="grid grid-cols-3 gap-1.5">
+        <div>
+          <label class="text-[9px] text-red-400 font-bold">X°</label>
+          <input id="inp-rot-x" type="number" step="5" oninput="applyInspector()" class="w-full bg-zinc-950 border border-zinc-800 text-xs px-2 py-1 rounded-lg text-right font-mono text-white outline-none focus:border-amber-500">
+        </div>
+        <div>
+          <label class="text-[9px] text-green-400 font-bold">Y°</label>
+          <input id="inp-rot-y" type="number" step="5" oninput="applyInspector()" class="w-full bg-zinc-950 border border-zinc-800 text-xs px-2 py-1 rounded-lg text-right font-mono text-white outline-none focus:border-amber-500">
+        </div>
+        <div>
+          <label class="text-[9px] text-blue-400 font-bold">Z°</label>
+          <input id="inp-rot-z" type="number" step="5" oninput="applyInspector()" class="w-full bg-zinc-950 border border-zinc-800 text-xs px-2 py-1 rounded-lg text-right font-mono text-white outline-none focus:border-amber-500">
+        </div>
+      </div>
+    </div>
+
     <div class="flex gap-2">
-      <button onclick="duplicateAllSelected()" class="flex-1 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 text-xs font-semibold rounded-xl border border-amber-500/20 transition"><i class="fa-solid fa-clone text-xs mr-1.5"></i>Duplikat Semua</button>
-      <button onclick="deleteAllSelected()" title="Hapus Semua Tongkat Terpilih" class="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-semibold rounded-xl border border-red-500/20 transition"><i class="fa-solid fa-trash text-xs"></i></button>
+      <button onclick="resetSelectedRotation()" class="flex-1 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-[11px] font-semibold rounded-xl border border-zinc-700 transition">Reset Rotasi</button>
+      <button onclick="snapSelectedToGround()" class="flex-1 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-[11px] font-semibold rounded-xl border border-zinc-700 transition">Ke Lantai</button>
     </div>
   </div>
-</main>
 </div>
-<div id="toast" class="fixed bottom-16 right-6 bg-zinc-900 border border-amber-500/40 text-zinc-100 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 translate-y-10 opacity-0 pointer-events-none transition-all duration-300 z-50"><i class="fa-solid fa-circle-info text-amber-400 text-base"></i><span id="toast-message" class="text-xs font-semibold">Notifikasi Studio</span></div>
-<script>
-// =========================================================
-// PIONEERCRAFT 3D - Tongkat Pioneering Assembly Studio
-// Dibangun dari struktur aplikasi Three.js asli, tetapi sistem
-// brick/LEGO diganti menjadi objek tongkat pioneering.
-// =========================================================
 
+<!-- Toast Notification -->
+<div id="toast" class="fixed bottom-16 md:bottom-6 right-6 bg-zinc-900 border border-amber-500/40 text-zinc-100 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 translate-y-10 opacity-0 pointer-events-none transition-all duration-300 z-50">
+  <i class="fa-solid fa-circle-info text-amber-400 text-base"></i>
+  <span id="toast-message" class="text-xs font-semibold">Notifikasi Studio</span>
+</div>
+
+<script>
 const STICK_COLORS = [
-  {id:'natural',name:'Kayu Natural',hex:'#B98245'},
-  {id:'light',name:'Kayu Muda',hex:'#D6A76A'},
-  {id:'dark',name:'Kayu Tua',hex:'#754C29'},
-  {id:'black',name:'Hitam',hex:'#202020'},
-  {id:'white',name:'Putih',hex:'#E8E8E8'},
-  {id:'green',name:'Hijau',hex:'#315C3A'},
-  {id:'brown',name:'Cokelat',hex:'#8B5A2B'},
-  {id:'orange',name:'Oranye',hex:'#C96F2D'},
-  {id:'yellow',name:'Kuning',hex:'#D7A928'},
-  {id:'red',name:'Merah',hex:'#A63D32'},
-  {id:'blue',name:'Biru',hex:'#365D7A'},
-  {id:'gray',name:'Abu-abu',hex:'#6B7280'}
+  { id: 'natural', name: 'Kayu Natural', hex: '#B98245' },
+  { id: 'light', name: 'Kayu Muda', hex: '#D6A76A' },
+  { id: 'dark', name: 'Kayu Tua', hex: '#754C29' },
+  { id: 'black', name: 'Hitam Pramuka', hex: '#202020' },
+  { id: 'white', name: 'Putih Bersih', hex: '#E8E8E8' },
+  { id: 'green', name: 'Hijau Tunas', hex: '#315C3A' },
+  { id: 'brown', name: 'Cokelat Kayu', hex: '#8B5A2B' },
+  { id: 'orange', name: 'Oranye Api', hex: '#C96F2D' },
+  { id: 'yellow', name: 'Kuning Mas', hex: '#D7A928' },
+  { id: 'red', name: 'Merah Berani', hex: '#A63D32' },
+  { id: 'blue', name: 'Biru Laut', hex: '#365D7A' },
+  { id: 'gray', name: 'Abu-abu Metal', hex: '#6B7280' }
 ];
 
 const PIONEERING_STICKS = [
-  {id:'stick_60',name:'Tongkat 60 cm',length:6,radius:.16,icon:'🪵'},
-  {id:'stick_90',name:'Tongkat 90 cm',length:9,radius:.17,icon:'🪵'},
-  {id:'stick_120',name:'Tongkat 120 cm',length:12,radius:.18,icon:'🪵'},
-  {id:'stick_150',name:'Tongkat 150 cm',length:15,radius:.19,icon:'🪵'},
-  {id:'stick_180',name:'Tongkat 180 cm',length:18,radius:.20,icon:'🪵'},
-  {id:'stick_200',name:'Tongkat 200 cm',length:20,radius:.21,icon:'🪵'}
+  { id: 'stick_60', name: 'Tongkat 60 cm', length: 6, radius: 0.16, icon: '🪵' },
+  { id: 'stick_90', name: 'Tongkat 90 cm', length: 9, radius: 0.17, icon: '🪵' },
+  { id: 'stick_120', name: 'Tongkat 120 cm', length: 12, radius: 0.18, icon: '🪵' },
+  { id: 'stick_150', name: 'Tongkat 150 cm', length: 15, radius: 0.19, icon: '🪵' },
+  { id: 'stick_180', name: 'Tongkat 180 cm', length: 18, radius: 0.20, icon: '🪵' },
+  { id: 'stick_200', name: 'Tongkat 200 cm', length: 20, radius: 0.21, icon: '🪵' }
 ];
 
-let state={
-  activeTool:'place',selectedStickId:'stick_120',selectedColorId:'natural',
-  rotation:{x:0,y:0,z:0},sticksInScene:[],isExploded:false,
-  cameraTargetPos:{x:18,y:13,z:20},isTransitioningCamera:false,
-  multiSelectMode:false
+let state = {
+  selectedStickId: 'stick_120',
+  selectedColorId: 'natural',
+  sticksInScene: [],
+  selectedSticks: [],
+  isDraggingStick: false,
+  isRotatingStick: false,
+  draggedStick: null,
+  dragPlane: null,
+  dragPlaneIntersection: new THREE.Vector3(),
+  multiSelectMode: false,
+  history: [],
+  historyIndex: -1
 };
 
-let scene,camera,renderer,controls,planeGrid,raycaster,mouse,ghostMesh;
-const GRID_SIZE=28;
-const UP=new THREE.Vector3(0,1,0);
+let lastSnapState = false;
 
-const audioCtx=new (window.AudioContext||window.webkitAudioContext)();
-function playSound(type){try{
-  if(audioCtx.state==='suspended')audioCtx.resume();
-  const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.connect(gain);gain.connect(audioCtx.destination);
-  const now=audioCtx.currentTime;
-  if(type==='place'){osc.type='triangle';osc.frequency.setValueAtTime(260,now);osc.frequency.exponentialRampToValueAtTime(140,now+.1);gain.gain.setValueAtTime(.18,now);gain.gain.exponentialRampToValueAtTime(.01,now+.1)}
-  else if(type==='delete'){osc.type='sawtooth';osc.frequency.setValueAtTime(190,now);osc.frequency.exponentialRampToValueAtTime(70,now+.12);gain.gain.setValueAtTime(.16,now);gain.gain.exponentialRampToValueAtTime(.01,now+.12)}
-  else if(type==='paint'){osc.type='sine';osc.frequency.setValueAtTime(520,now);osc.frequency.exponentialRampToValueAtTime(720,now+.07);gain.gain.setValueAtTime(.1,now);gain.gain.exponentialRampToValueAtTime(.01,now+.07)}
-  else {osc.type='sine';osc.frequency.setValueAtTime(300,now);osc.frequency.exponentialRampToValueAtTime(450,now+.1);gain.gain.setValueAtTime(.1,now);gain.gain.exponentialRampToValueAtTime(.01,now+.1)}
-  osc.start(now);osc.stop(now+.13);
-}catch(e){}}
+let scene, camera, renderer, controls, groundPlane, raycaster, mouse;
+let selectionOutlineGroup, snapVisualMarker;
+const GRID_SIZE = 36;
 
-function init3DStudio(){
-  const container=document.getElementById('canvas-container');container.innerHTML='';
-  scene=new THREE.Scene();scene.background=new THREE.Color(0x09090b);
-  camera=new THREE.PerspectiveCamera(45,container.clientWidth/container.clientHeight,.1,1000);
-  camera.position.set(state.cameraTargetPos.x,state.cameraTargetPos.y,state.cameraTargetPos.z);
-  renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});renderer.setSize(container.clientWidth,container.clientHeight);renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;container.appendChild(renderer.domElement);
-  controls=new THREE.OrbitControls(camera,renderer.domElement);controls.target.set(0,1,0);controls.enableDamping=true;controls.dampingFactor=.08;controls.minDistance=4;controls.maxDistance=55;controls.maxPolarAngle=Math.PI*.95;
-  scene.add(new THREE.AmbientLight(0xffffff,.7));
-  const key=new THREE.DirectionalLight(0xffffff,1);key.position.set(16,28,16);key.castShadow=true;key.shadow.mapSize.width=2048;key.shadow.mapSize.height=2048;scene.add(key);
-  const fill=new THREE.DirectionalLight(0x8bb8d8,.28);fill.position.set(-14,14,-14);scene.add(fill);
-  const grid=new THREE.GridHelper(GRID_SIZE,GRID_SIZE,0xf59e0b,0x27272a);grid.position.y=-.01;scene.add(grid);
-  const planeGeo=new THREE.PlaneGeometry(GRID_SIZE,GRID_SIZE);planeGeo.rotateX(-Math.PI/2);planeGrid=new THREE.Mesh(planeGeo,new THREE.MeshBasicMaterial({visible:false}));scene.add(planeGrid);
-  raycaster=new THREE.Raycaster();mouse=new THREE.Vector2();
-  renderer.domElement.addEventListener('pointermove',onPointerMove);renderer.domElement.addEventListener('pointerdown',onPointerDown);window.addEventListener('resize',onWindowResize);
-  updateGhostMesh();animate();
-}
-
-function getStickDef(){return PIONEERING_STICKS.find(s=>s.id===state.selectedStickId)||PIONEERING_STICKS[2]}
-function getColorDef(id=state.selectedColorId){return STICK_COLORS.find(c=>c.id===id)||STICK_COLORS[0]}
-
-function makeWoodMaterial(colorDef,ghost=false){
-  return new THREE.MeshStandardMaterial({color:colorDef.hex,roughness:.62,metalness:.02,transparent:ghost,opacity:ghost?.42:1});
-}
-
-function createStickGeometry(stickDef,colorId=state.selectedColorId,ghost=false){
-  const group=new THREE.Group();
-  const color=getColorDef(colorId);
-  const mat=makeWoodMaterial(color,ghost);
-  const bodyGeo=new THREE.CylinderGeometry(stickDef.radius,stickDef.radius*1.02,stickDef.length,32,1,false);
-  bodyGeo.rotateZ(Math.PI/2);
-  const body=new THREE.Mesh(bodyGeo,mat);body.castShadow=!ghost;body.receiveShadow=true;group.add(body);
-
-  // Ujung tongkat: ring + dark inner opening. Geometry is local X axis.
-  const ringMat=ghost?new THREE.MeshBasicMaterial({color:0xf59e0b,transparent:true,opacity:.45}):new THREE.MeshStandardMaterial({color:color.hex,roughness:.72});
-  [-1,1].forEach(side=>{
-    const ring=new THREE.Mesh(new THREE.TorusGeometry(stickDef.radius*.86,stickDef.radius*.12,10,32),ringMat);
-    ring.rotation.y=Math.PI/2;ring.position.x=side*stickDef.length/2;ring.castShadow=!ghost;group.add(ring);
-    if(!ghost){
-      const inner=new THREE.Mesh(new THREE.CircleGeometry(stickDef.radius*.73,24),new THREE.MeshStandardMaterial({color:0x2b2118,roughness:1,side:THREE.DoubleSide}));
-      inner.rotation.y=side>0?Math.PI/2:-Math.PI/2;inner.position.x=side*(stickDef.length/2-.012);group.add(inner);
+// Audio Synthesizer
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function playSound(type) {
+  try {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    const now = audioCtx.currentTime;
+    if (type === 'place') {
+      osc.type = 'triangle'; osc.frequency.setValueAtTime(260, now);
+      osc.frequency.exponentialRampToValueAtTime(140, now + 0.1);
+      gain.gain.setValueAtTime(0.18, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+    } else if (type === 'delete') {
+      osc.type = 'sawtooth'; osc.frequency.setValueAtTime(190, now);
+      osc.frequency.exponentialRampToValueAtTime(70, now + 0.12);
+      gain.gain.setValueAtTime(0.16, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+    } else if (type === 'snap') {
+      osc.type = 'sine'; osc.frequency.setValueAtTime(520, now);
+      osc.frequency.exponentialRampToValueAtTime(680, now + 0.05);
+      gain.gain.setValueAtTime(0.12, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+    } else {
+      osc.type = 'sine'; osc.frequency.setValueAtTime(320, now);
+      osc.frequency.exponentialRampToValueAtTime(400, now + 0.08);
+      gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
     }
+    osc.start(now); osc.stop(now + 0.13);
+  } catch (e) {}
+}
+
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  const txt = document.getElementById('toast-message');
+  txt.innerText = msg;
+  toast.classList.remove('translate-y-10', 'opacity-0', 'pointer-events-none');
+  setTimeout(() => {
+    toast.classList.add('translate-y-10', 'opacity-0', 'pointer-events-none');
+  }, 2200);
+}
+
+function init3DStudio() {
+  const container = document.getElementById('canvas-container');
+  container.innerHTML = '';
+
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x09090b);
+
+  camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+  camera.position.set(18, 14, 20);
+
+  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setSize(container.clientWidth, container.clientHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  container.appendChild(renderer.domElement);
+
+  controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.target.set(0, 1, 0);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.minDistance = 4;
+  controls.maxDistance = 65;
+  controls.maxPolarAngle = Math.PI * 0.49;
+
+  // Lighting
+  scene.add(new THREE.AmbientLight(0xffffff, 0.65));
+  const sun = new THREE.DirectionalLight(0xfff5ea, 0.95);
+  sun.position.set(18, 28, 14);
+  sun.castShadow = true;
+  sun.shadow.mapSize.width = 2048;
+  sun.shadow.mapSize.height = 2048;
+  sun.shadow.camera.near = 0.5;
+  sun.shadow.camera.far = 80;
+  const d = 25;
+  sun.shadow.camera.left = -d; sun.shadow.camera.right = d;
+  sun.shadow.camera.top = d; sun.shadow.camera.bottom = -d;
+  scene.add(sun);
+
+  // Ground Grid
+  const grid = new THREE.GridHelper(GRID_SIZE, GRID_SIZE, 0xf59e0b, 0x27272a);
+  grid.position.y = -0.01;
+  scene.add(grid);
+
+  const planeGeo = new THREE.PlaneGeometry(GRID_SIZE, GRID_SIZE);
+  planeGeo.rotateX(-Math.PI / 2);
+  groundPlane = new THREE.Mesh(planeGeo, new THREE.MeshBasicMaterial({ visible: false }));
+  scene.add(groundPlane);
+
+  // Outline group & snap marker
+  selectionOutlineGroup = new THREE.Group();
+  scene.add(selectionOutlineGroup);
+
+  const snapGeo = new THREE.SphereGeometry(0.35, 16, 16);
+  const snapMat = new THREE.MeshBasicMaterial({ color: 0xf59e0b, wireframe: true });
+  snapVisualMarker = new THREE.Mesh(snapGeo, snapMat);
+  snapVisualMarker.visible = false;
+  scene.add(snapVisualMarker);
+
+  raycaster = new THREE.Raycaster();
+  mouse = new THREE.Vector2();
+
+  // Drag plane for 3D Canva translation
+  state.dragPlane = new THREE.Plane();
+
+  // Canvas Event Listeners
+  const el = renderer.domElement;
+  el.addEventListener('pointerdown', onPointerDown);
+  el.addEventListener('pointermove', onPointerMove);
+  el.addEventListener('pointerup', onPointerUp);
+  window.addEventListener('resize', onWindowResize);
+
+  // Setup Rotation Handle Touch/Mouse Events
+  const rotOverlay = document.getElementById('rotation-handle-overlay');
+  rotOverlay.addEventListener('pointerdown', (e) => {
+    e.stopPropagation();
+    state.isRotatingStick = true;
+    controls.enabled = false;
   });
-  // Subtle bands near both ends to make the object visually recognizable.
-  [-1,1].forEach(side=>{
-    const bandGeo=new THREE.CylinderGeometry(stickDef.radius*1.015,stickDef.radius*1.015,stickDef.radius*.20,32);
-    bandGeo.rotateZ(Math.PI/2);
-    const band=new THREE.Mesh(bandGeo,ghost?new THREE.MeshBasicMaterial({color:0xf59e0b,transparent:true,opacity:.32}):new THREE.MeshStandardMaterial({color:0x315c3a,roughness:.7}));
-    band.position.x=side*(stickDef.length/2-.32);group.add(band);
+
+  setupUI();
+  saveStateToHistory();
+  animate();
+}
+
+function getStickDef(id = state.selectedStickId) { 
+  return PIONEERING_STICKS.find(s => s.id === id) || PIONEERING_STICKS[2]; 
+}
+
+function getColorDef(id = state.selectedColorId) { 
+  return STICK_COLORS.find(c => c.id === id) || STICK_COLORS[0]; 
+}
+
+function makeWoodMaterial(colorDef) {
+  return new THREE.MeshStandardMaterial({
+    color: colorDef.hex, roughness: 0.65, metalness: 0.05
   });
-  group.userData.length=stickDef.length;group.userData.radius=stickDef.radius;
-  addConnectionMarkers(group,ghost);
+}
+
+function createStickGeometry(stickDef, colorId = state.selectedColorId) {
+  const group = new THREE.Group();
+  const color = getColorDef(colorId);
+  const mat = makeWoodMaterial(color);
+
+  // Main Cylinder along Y axis (Standing Upright by default)
+  const bodyGeo = new THREE.CylinderGeometry(stickDef.radius, stickDef.radius * 1.02, stickDef.length, 24);
+  const body = new THREE.Mesh(bodyGeo, mat);
+  body.castShadow = true;
+  body.receiveShadow = true;
+  group.add(body);
+
+  // Caps & Rope Binding details
+  const ringMat = new THREE.MeshStandardMaterial({ color: color.hex, roughness: 0.7 });
+
+  [-1, 1].forEach(side => {
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(stickDef.radius * 0.88, stickDef.radius * 0.12, 8, 24), ringMat);
+    ring.rotation.x = Math.PI / 2;
+    ring.position.y = side * (stickDef.length / 2);
+    group.add(ring);
+
+    const cap = new THREE.Mesh(new THREE.CircleGeometry(stickDef.radius * 0.75, 16), new THREE.MeshStandardMaterial({ color: 0x221810, roughness: 1, side: THREE.DoubleSide }));
+    cap.rotation.x = side > 0 ? -Math.PI / 2 : Math.PI / 2;
+    cap.position.y = side * (stickDef.length / 2 - 0.01);
+    group.add(cap);
+
+    const band = new THREE.Mesh(
+      new THREE.CylinderGeometry(stickDef.radius * 1.03, stickDef.radius * 1.03, stickDef.radius * 0.22, 24),
+      new THREE.MeshStandardMaterial({ color: 0x315c3a, roughness: 0.8 })
+    );
+    band.position.y = side * (stickDef.length / 2 - 0.35);
+    group.add(band);
+  });
+
+  group.userData = {
+    isStick: true,
+    stickId: stickDef.id,
+    colorId: colorId,
+    length: stickDef.length,
+    radius: stickDef.radius,
+    isLocked: false,
+    id: 'stick_' + Math.random().toString(36).substr(2, 9)
+  };
+
+  addConnectionMarkers(group);
   return group;
 }
 
-function updateGhostMesh(){
-  if(ghostMesh)scene.remove(ghostMesh);
-  ghostMesh=createStickGeometry(getStickDef(),state.selectedColorId,true);ghostMesh.visible=false;scene.add(ghostMesh);
-}
-
-function setGhostRotation(){
-  if(!ghostMesh)return;
-  ghostMesh.rotation.set(THREE.MathUtils.degToRad(state.rotation.x),THREE.MathUtils.degToRad(state.rotation.y),THREE.MathUtils.degToRad(state.rotation.z));
-}
-
-function snapHalf(v){return Math.round(v*2)/2}
-function getWorldAxis(group,localAxis){return localAxis.clone().applyQuaternion(group.quaternion).normalize()}
-
-// =========================================================
-// CONNECTION POINTS - minimal 6 titik di sepanjang sisi tongkat
-// =========================================================
-const CONNECTION_COUNT=6;
-function getConnectionLocalPoints(group){
-  const L=group.userData.length||getStickDef().length;
-  const R=group.userData.radius||getStickDef().radius;
-  const points=[];
-  for(let i=0;i<CONNECTION_COUNT;i++){
-    // Enam titik merata di sepanjang satu sisi tongkat, seperti titik merah pada referensi.
-    const t=i/(CONNECTION_COUNT-1);
-    const x=-L/2 + t*L;
-    points.push(new THREE.Vector3(x,R*1.04,0));
+function addConnectionMarkers(group) {
+  const L = group.userData.length || getStickDef().length;
+  const R = group.userData.radius || getStickDef().radius;
+  const count = 6;
+  for (let i = 0; i < count; i++) {
+    const t = i / (count - 1);
+    const y = -L / 2 + t * L;
+    const marker = new THREE.Mesh(
+      new THREE.SphereGeometry(R * 0.35, 10, 10),
+      new THREE.MeshBasicMaterial({ color: 0xef4444, transparent: true, opacity: 0.0 })
+    );
+    marker.position.set(0, y, 0);
+    marker.userData.isNode = true;
+    group.add(marker);
   }
-  return points;
-}
-function getConnectionWorldPoints(group){
-  const local=getConnectionLocalPoints(group);
-  const q=group.getWorldQuaternion(new THREE.Quaternion());
-  const center=group.getWorldPosition(new THREE.Vector3());
-  return local.map(p=>p.clone().applyQuaternion(q).add(center));
-}
-function getEndpoints(group){
-  const def=group.userData;
-  const axis=getWorldAxis(group,new THREE.Vector3(1,0,0));
-  const center=group.getWorldPosition(new THREE.Vector3());
-  return [center.clone().add(axis.clone().multiplyScalar(def.length/2)),center.clone().sub(axis.clone().multiplyScalar(def.length/2))]
 }
 
-function addConnectionMarkers(group,ghost=false){
-  const old=group.getObjectByName('connection-markers');
-  if(old)group.remove(old);
-  const markers=new THREE.Group();markers.name='connection-markers';
-  const R=group.userData.radius||getStickDef().radius;
-  const mat=ghost
-    ? new THREE.MeshBasicMaterial({color:0xf59e0b,transparent:true,opacity:.65})
-    : new THREE.MeshBasicMaterial({color:0xef4444,transparent:true,opacity:.88});
-  const geo=new THREE.SphereGeometry(Math.max(R*.30,.065),12,8);
-  getConnectionLocalPoints(group).forEach((p,i)=>{
-    const m=new THREE.Mesh(geo,mat);
-    m.position.copy(p);
-    m.userData.connectionIndex=i;
-    m.name='connection-point-'+i;
-    markers.add(m);
+function addStickToCanvas(stickDefId = state.selectedStickId) {
+  const def = getStickDef(stickDefId);
+  const stick = createStickGeometry(def, state.selectedColorId);
+  
+  // Position standing vertically on the ground plane
+  stick.position.set(
+    (Math.random() - 0.5) * 2,
+    def.length / 2,
+    (Math.random() - 0.5) * 2
+  );
+
+  scene.add(stick);
+  state.sticksInScene.push(stick);
+
+  playSound('place');
+  saveStateToHistory();
+  updateStickCountHUD();
+  selectStick(stick);
+  showToast(`${def.name} ditambahkan (Berdiri)`);
+}
+
+function addConnectionMarkers(group) {
+  const L = group.userData.length || getStickDef().length;
+  const R = group.userData.radius || getStickDef().radius;
+  const count = 6;
+  for (let i = 0; i < count; i++) {
+    const t = i / (count - 1);
+    const x = -L / 2 + t * L;
+    const marker = new THREE.Mesh(
+      new THREE.SphereGeometry(R * 0.35, 10, 10),
+      new THREE.MeshBasicMaterial({ color: 0xef4444, transparent: true, opacity: 0.0 }) // hidden unless debug/snap
+    );
+    marker.position.set(x, 0, 0);
+    marker.userData.isNode = true;
+    group.add(marker);
+  }
+}
+
+function addStickToCanvas(stickDefId = state.selectedStickId) {
+  const def = getStickDef(stickDefId);
+  const stick = createStickGeometry(def, state.selectedColorId);
+  
+  // Position in front of camera target / ground center
+  stick.position.set(
+    (Math.random() - 0.5) * 2,
+    def.radius + 0.05,
+    (Math.random() - 0.5) * 2
+  );
+
+  scene.add(stick);
+  state.sticksInScene.push(stick);
+
+  playSound('place');
+  saveStateToHistory();
+  updateStickCountHUD();
+  selectStick(stick);
+  showToast(`${def.name} ditambahkan`);
+}
+
+function selectStick(mesh, append = false) {
+  if (!mesh) return;
+  let curr = mesh;
+  while (curr.parent && curr.parent !== scene) curr = curr.parent;
+  if (!curr.userData || !curr.userData.isStick) return;
+
+  if (append || state.multiSelectMode) {
+    const idx = state.selectedSticks.indexOf(curr);
+    if (idx >= 0) state.selectedSticks.splice(idx, 1);
+    else state.selectedSticks.push(curr);
+  } else {
+    state.selectedSticks = [curr];
+  }
+
+  playSound('select');
+  updateSelectionHighlights();
+}
+
+function deselectStick() {
+  state.selectedSticks = [];
+  updateSelectionHighlights();
+}
+
+function updateSelectionHighlights() {
+  while (selectionOutlineGroup.children.length > 0) {
+    selectionOutlineGroup.remove(selectionOutlineGroup.children[0]);
+  }
+
+  const toolbar = document.getElementById('canva-toolbar');
+  const rotOverlay = document.getElementById('rotation-handle-overlay');
+
+  if (state.selectedSticks.length === 0) {
+    toolbar.classList.remove('visible');
+    rotOverlay.style.display = 'none';
+    return;
+  }
+
+  state.selectedSticks.forEach(stick => {
+    const box = new THREE.BoxHelper(stick, 0xf59e0b);
+    selectionOutlineGroup.add(box);
   });
-  group.add(markers);
+
+  const primaryStick = state.selectedSticks[0];
+  positionCanvaElementsScreen(primaryStick);
+
+  // Lock status icon
+  const lockBtn = document.getElementById('btn-lock-toggle');
+  if (primaryStick.userData.isLocked) {
+    lockBtn.innerHTML = '<i class="fa-solid fa-lock text-red-400"></i>';
+  } else {
+    lockBtn.innerHTML = '<i class="fa-solid fa-lock-open text-zinc-300"></i>';
+  }
+
+  // Sync advanced inspector fields
+  document.getElementById('inp-pos-x').value = primaryStick.position.x.toFixed(1);
+  document.getElementById('inp-pos-y').value = primaryStick.position.y.toFixed(1);
+  document.getElementById('inp-pos-z').value = primaryStick.position.z.toFixed(1);
+
+  document.getElementById('inp-rot-x').value = Math.round(THREE.MathUtils.radToDeg(primaryStick.rotation.x));
+  document.getElementById('inp-rot-y').value = Math.round(THREE.MathUtils.radToDeg(primaryStick.rotation.y));
+  document.getElementById('inp-rot-z').value = Math.round(THREE.MathUtils.radToDeg(primaryStick.rotation.z));
 }
 
-function clampStickToGround(group){
-  if(!group)return;
-  // Hitung bounding box dalam world-space setelah rotasi.
-  const box=new THREE.Box3().setFromObject(group);
-  const minY=box.min.y;
-  if(minY<0)group.position.y+=-minY;
+function positionCanvaElementsScreen(targetMesh) {
+  const toolbar = document.getElementById('canva-toolbar');
+  const rotOverlay = document.getElementById('rotation-handle-overlay');
+
+  toolbar.classList.add('visible');
+  rotOverlay.style.display = 'flex';
+
+  const pos = targetMesh.position.clone();
+  pos.project(camera);
+
+  const hw = window.innerWidth / 2;
+  const hh = window.innerHeight / 2;
+
+  const x = (pos.x * hw) + hw;
+  const y = -(pos.y * hh) + hh;
+
+  // Position Rotation Ring slightly above object center
+  rotOverlay.style.left = `${x}px`;
+  rotOverlay.style.top = `${y - 45}px`;
+
+  // Position Desktop Floating Toolbar clamped within viewport
+  if (window.innerWidth > 768) {
+    const toolWidth = 340;
+    const clampedX = Math.max(20, Math.min(window.innerWidth - toolWidth - 20, x - toolWidth / 2));
+    const clampedY = Math.max(70, Math.min(window.innerHeight - 100, y - 110));
+    toolbar.style.left = `${clampedX}px`;
+    toolbar.style.top = `${clampedY}px`;
+  }
 }
 
-function getNearestConnectionTarget(hitPoint){
-  let best=null,bestDist=Infinity;
-  state.sticksInScene.forEach(item=>{
-    const points=getConnectionWorldPoints(item.meshGroup);
-    points.forEach((p,index)=>{
-      const d=p.distanceToSquared(hitPoint);
-      if(d<bestDist){bestDist=d;best={item,point:p,index}}
+function getPointerIntersection(e) {
+  const rect = renderer.domElement.getBoundingClientRect();
+  mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+  mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(mouse, camera);
+
+  const intersects = raycaster.intersectObjects([groundPlane, ...state.sticksInScene], true);
+  return intersects;
+}
+
+function calculateSmartSnap(targetPos, draggedStick) {
+  const snapThreshold = 1.0;
+  let bestSnapOffset = new THREE.Vector3(0, 0, 0);
+  let minDistance = snapThreshold;
+  let snappedTargetPoint = null;
+
+  // Collect connection nodes of dragged stick in world space
+  const draggedNodes = [];
+  draggedStick.children.forEach(child => {
+    if (child.userData && child.userData.isNode) {
+      draggedNodes.push(child.getWorldPosition(new THREE.Vector3()));
+    }
+  });
+
+  // Check snap to other sticks
+  state.sticksInScene.forEach(otherStick => {
+    if (otherStick === draggedStick || state.selectedSticks.includes(otherStick)) return;
+
+    otherStick.children.forEach(child => {
+      if (child.userData && child.userData.isNode) {
+        const otherNodePos = child.getWorldPosition(new THREE.Vector3());
+
+        draggedNodes.forEach(dragNodePos => {
+          const dist = dragNodePos.distanceTo(otherNodePos);
+          if (dist < minDistance) {
+            minDistance = dist;
+            bestSnapOffset.subVectors(otherNodePos, dragNodePos);
+            snappedTargetPoint = otherNodePos.clone();
+          }
+        });
+      }
     });
   });
-  return best;
+
+  // Check snap to ground
+  const halfLen = (draggedStick.userData.length || 10) / 2;
+  const minY = targetPos.y - halfLen;
+  if (minY < 0.1) {
+    bestSnapOffset.y = halfLen - targetPos.y;
+    snappedTargetPoint = new THREE.Vector3(targetPos.x, halfLen, targetPos.z);
+  }
+
+  if (snappedTargetPoint) {
+    snapVisualMarker.position.copy(snappedTargetPoint);
+    snapVisualMarker.visible = true;
+    if (!lastSnapState) {
+      playSound('snap');
+      lastSnapState = true;
+    }
+  } else {
+    snapVisualMarker.visible = false;
+    lastSnapState = false;
+  }
+
+  return targetPos.clone().add(bestSnapOffset);
 }
 
-function alignGhostToConnection(target){
-  if(!ghostMesh||!target)return;
-  const localPoints=getConnectionLocalPoints(ghostMesh);
-  // Pakai nomor titik yang sama pada tongkat baru agar posisi sambungan
-  // terasa konsisten: titik 1 bertemu titik 1, titik 2 bertemu titik 2, dst.
-  const localAttach=localPoints[Math.min(target.index,localPoints.length-1)].clone();
-  localAttach.applyQuaternion(ghostMesh.quaternion);
-  ghostMesh.position.copy(target.point).sub(localAttach);
-  // Sedikit keluar dari permukaan target untuk menghindari z-fighting.
-  const existing=target.item.meshGroup;
-  const targetCenter=existing.getWorldPosition(new THREE.Vector3());
-  const outward=target.point.clone().sub(targetCenter);
-  if(outward.lengthSq()>0.0001){
-    outward.normalize();
-    ghostMesh.position.add(outward.multiplyScalar((existing.userData.radius||.18)*.08));
+function onPointerDown(e) {
+  if (e.button !== 0 && e.pointerType === 'mouse') return;
+
+  const intersects = getPointerIntersection(e);
+  if (intersects.length === 0) return;
+
+  const hitObj = intersects[0].object;
+
+  if (hitObj === groundPlane) {
+    deselectStick();
+  } else {
+    let topStick = hitObj;
+    while (topStick.parent && topStick.parent !== scene) topStick = topStick.parent;
+
+    if (topStick.userData && topStick.userData.isStick) {
+      selectStick(topStick, e.shiftKey);
+
+      if (!topStick.userData.isLocked) {
+        state.isDraggingStick = true;
+        state.draggedStick = topStick;
+
+        // Create drag plane parallel to camera at object height
+        const normal = camera.getWorldDirection(new THREE.Vector3()).negate();
+        state.dragPlane.setFromNormalAndCoplanarPoint(normal, topStick.position);
+
+        controls.enabled = false; // Disable camera orbit while dragging stick
+      }
+    }
   }
 }
 
-function onPointerMove(event){
-  if(!renderer||!ghostMesh)return;
-  const rect=renderer.domElement.getBoundingClientRect();
-  mouse.x=((event.clientX-rect.left)/rect.width)*2-1;
-  mouse.y=-((event.clientY-rect.top)/rect.height)*2+1;
-  if(state.activeTool!=='place'){ghostMesh.visible=false;return}
-  raycaster.setFromCamera(mouse,camera);
-  const targets=[planeGrid,...state.sticksInScene.map(s=>s.meshGroup)];
-  const hits=raycaster.intersectObjects(targets,true);
-  if(!hits.length){ghostMesh.visible=false;return}
+function onPointerMove(e) {
+  const rect = renderer.domElement.getBoundingClientRect();
+  mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+  mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(mouse, camera);
 
-  const hit=hits[0];
-  setGhostRotation();
-
-  if(hit.object===planeGrid){
-    const pos=new THREE.Vector3(snapHalf(hit.point.x),0,snapHalf(hit.point.z));
-    ghostMesh.position.copy(pos);
-    clampStickToGround(ghostMesh);
-    ghostMesh.visible=true;
+  if (state.isRotatingStick && state.selectedSticks.length > 0) {
+    const stick = state.selectedSticks[0];
+    if (!stick.userData.isLocked) {
+      stick.rotation.y += 0.05;
+      updateSelectionHighlights();
+    }
     return;
   }
 
-  // Jika menyentuh tongkat lain, snap ke salah satu dari 6 titik koneksi.
-  const target=getNearestConnectionTarget(hit.point);
-  if(target){
-    alignGhostToConnection(target);
-    clampStickToGround(ghostMesh);
-    ghostMesh.visible=true;
-    return;
-  }
+  if (state.isDraggingStick && state.draggedStick) {
+    if (raycaster.ray.intersectPlane(state.dragPlane, state.dragPlaneIntersection)) {
+      const targetPos = state.dragPlaneIntersection.clone();
+      const finalPos = calculateSmartSnap(targetPos, state.draggedStick);
 
-  ghostMesh.position.copy(hit.point);
-  clampStickToGround(ghostMesh);
-  ghostMesh.visible=true;
+      const delta = finalPos.clone().sub(state.draggedStick.position);
+      state.selectedSticks.forEach(st => {
+        if (!st.userData.isLocked) st.position.add(delta);
+      });
+
+      updateSelectionHighlights();
+    }
+  }
 }
 
-function onPointerDown(event){
-  if(event.button!==0||!renderer)return;
-  const rect=renderer.domElement.getBoundingClientRect();
-  mouse.x=((event.clientX-rect.left)/rect.width)*2-1;
-  mouse.y=-((event.clientY-rect.top)/rect.height)*2+1;
-  raycaster.setFromCamera(mouse,camera);
+function onPointerUp() {
+  if (state.isDraggingStick || state.isRotatingStick) {
+    state.isDraggingStick = false;
+    state.isRotatingStick = false;
+    state.draggedStick = null;
+    snapVisualMarker.visible = false;
+    controls.enabled = true; // Re-enable camera orbit
+    saveStateToHistory();
+  }
+}
 
-  if(state.activeTool==='place'&&ghostMesh&&ghostMesh.visible){
-    const def=getStickDef(),color=getColorDef();
-    const group=createStickGeometry(def,color.id,false);
-    group.position.copy(ghostMesh.position);
-    group.rotation.copy(ghostMesh.rotation);
-    group.userData={
-      id:'stick_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),
-      typeId:def.id,colorId:color.id,length:def.length,radius:def.radius,
-      basePos:group.position.clone(),baseRotation:group.rotation.clone()
-    };
-    clampStickToGround(group);
-    group.userData.basePos.copy(group.position);
-    scene.add(group);
-    state.sticksInScene.push({
-      id:group.userData.id,typeId:def.id,colorId:color.id,meshGroup:group,
-      pos:group.position.clone(),rotation:group.rotation.clone()
+function rotateSelectedQuick(angleDeg) {
+  if (state.selectedSticks.length === 0) return;
+  const rad = THREE.MathUtils.degToRad(angleDeg);
+  state.selectedSticks.forEach(stick => {
+    if (!stick.userData.isLocked) stick.rotation.y += rad;
+  });
+  playSound('select');
+  saveStateToHistory();
+  updateSelectionHighlights();
+  showToast(`Rotasi +${angleDeg}°`);
+}
+
+function duplicateSelected() {
+  if (state.selectedSticks.length === 0) return;
+
+  const newSelection = [];
+  state.selectedSticks.forEach(stick => {
+    const clone = createStickGeometry(
+      PIONEERING_STICKS.find(s => s.id === stick.userData.stickId) || getStickDef(),
+      stick.userData.colorId
+    );
+    clone.position.copy(stick.position).add(new THREE.Vector3(0.5, 0.4, 0.5));
+    clone.rotation.copy(stick.rotation);
+    scene.add(clone);
+    state.sticksInScene.push(clone);
+    newSelection.push(clone);
+  });
+
+  state.selectedSticks = newSelection;
+  playSound('place');
+  saveStateToHistory();
+  updateStickCountHUD();
+  updateSelectionHighlights();
+  showToast('Tongkat diduplikasi');
+}
+
+function flipSelectedHorizontal() {
+  if (state.selectedSticks.length === 0) return;
+  state.selectedSticks.forEach(stick => {
+    if (!stick.userData.isLocked) stick.rotation.y += Math.PI;
+  });
+  playSound('select');
+  saveStateToHistory();
+  updateSelectionHighlights();
+  showToast('Dibalik Horizontal');
+}
+
+function flipSelectedVertical() {
+  if (state.selectedSticks.length === 0) return;
+  state.selectedSticks.forEach(stick => {
+    if (!stick.userData.isLocked) stick.rotation.z += Math.PI;
+  });
+  playSound('select');
+  saveStateToHistory();
+  updateSelectionHighlights();
+  showToast('Dibalik Vertikal');
+}
+
+function toggleLockSelected() {
+  if (state.selectedSticks.length === 0) return;
+  let isLocked = false;
+  state.selectedSticks.forEach(stick => {
+    stick.userData.isLocked = !stick.userData.isLocked;
+    isLocked = stick.userData.isLocked;
+  });
+  updateSelectionHighlights();
+  showToast(isLocked ? 'Objek dikunci' : 'Objek dibuka');
+}
+
+function deleteSelected() {
+  if (state.selectedSticks.length === 0) return;
+  state.selectedSticks.forEach(stick => {
+    const idx = state.sticksInScene.indexOf(stick);
+    if (idx >= 0) state.sticksInScene.splice(idx, 1);
+    scene.remove(stick);
+  });
+  state.selectedSticks = [];
+  playSound('delete');
+  saveStateToHistory();
+  updateStickCountHUD();
+  updateSelectionHighlights();
+  showToast('Tongkat dihapus');
+}
+
+function paintStickMesh(stick, colorId) {
+  stick.userData.colorId = colorId;
+  const colorDef = getColorDef(colorId);
+  stick.children.forEach(child => {
+    if (child.material && !child.userData.isNode) {
+      child.material.color.set(colorDef.hex);
+    }
+  });
+  playSound('paint');
+  saveStateToHistory();
+  showToast(`Warna: ${colorDef.name}`);
+}
+
+function toggleMultiSelectMode() {
+  state.multiSelectMode = !state.multiSelectMode;
+  const btn = document.getElementById('btn-multi-select');
+  if (state.multiSelectMode) {
+    btn.classList.add('bg-amber-500/20', 'border-amber-500', 'text-amber-400');
+    showToast('Mode Pilih Banyak Aktif');
+  } else {
+    btn.classList.remove('bg-amber-500/20', 'border-amber-500', 'text-amber-400');
+  }
+}
+
+function resetSelectedRotation() {
+  if (state.selectedSticks.length === 0) return;
+  state.selectedSticks.forEach(stick => {
+    if (!stick.userData.isLocked) stick.rotation.set(0, 0, 0);
+  });
+  saveStateToHistory();
+  updateSelectionHighlights();
+  showToast('Rotasi di-reset');
+}
+
+function snapSelectedToGround() {
+  if (state.selectedSticks.length === 0) return;
+  state.selectedSticks.forEach(stick => {
+    if (!stick.userData.isLocked) {
+      const halfLen = (stick.userData.length || 10) / 2;
+      stick.position.y = halfLen;
+    }
+  });
+  saveStateToHistory();
+  updateSelectionHighlights();
+  showToast('Dipindahkan ke lantai');
+}
+
+function saveStateToHistory() {
+  if (state.historyIndex < state.history.length - 1) {
+    state.history = state.history.slice(0, state.historyIndex + 1);
+  }
+  const snapshot = state.sticksInScene.map(stick => ({
+    stickId: stick.userData.stickId,
+    colorId: stick.userData.colorId,
+    isLocked: stick.userData.isLocked,
+    position: { x: stick.position.x, y: stick.position.y, z: stick.position.z },
+    rotation: { x: stick.rotation.x, y: stick.rotation.y, z: stick.rotation.z }
+  }));
+  state.history.push(snapshot);
+  state.historyIndex = state.history.length - 1;
+}
+
+function undo() {
+  if (state.historyIndex <= 0) return showToast('Tidak ada histori undo');
+  state.historyIndex--;
+  restoreSnapshot(state.history[state.historyIndex]);
+  showToast('Undo');
+}
+
+function redo() {
+  if (state.historyIndex >= state.history.length - 1) return showToast('Posisi terbaru');
+  state.historyIndex++;
+  restoreSnapshot(state.history[state.historyIndex]);
+  showToast('Redo');
+}
+
+function restoreSnapshot(snapshot) {
+  state.sticksInScene.forEach(stick => scene.remove(stick));
+  state.sticksInScene = [];
+  deselectStick();
+
+  snapshot.forEach(data => {
+    const stick = createStickGeometry(getStickDef(data.stickId), data.colorId);
+    stick.position.set(data.position.x, data.position.y, data.position.z);
+    stick.rotation.set(data.rotation.x, data.rotation.y, data.rotation.z);
+    stick.userData.isLocked = data.isLocked;
+    scene.add(stick);
+    state.sticksInScene.push(stick);
+  });
+  updateStickCountHUD();
+}
+
+function clearStudioScene() {
+  if (state.sticksInScene.length === 0) return;
+  state.sticksInScene.forEach(stick => scene.remove(stick));
+  state.sticksInScene = [];
+  deselectStick();
+  saveStateToHistory();
+  updateStickCountHUD();
+  showToast('Kanvas dibersihkan');
+}
+
+function loadPreset(type) {
+  clearStudioScene();
+  const def = PIONEERING_STICKS[3]; // 150cm
+
+  if (type === 'tripod') {
+    for (let i = 0; i < 3; i++) {
+      const angle = (i * Math.PI * 2) / 3;
+      const stick = createStickGeometry(def, 'natural');
+      stick.position.set(Math.cos(angle) * 3, 5.5, Math.sin(angle) * 3);
+      stick.rotation.set(0, -angle, Math.PI / 6);
+      scene.add(stick); state.sticksInScene.push(stick);
+    }
+  } else if (type === 'triangle') {
+    const s1 = createStickGeometry(def, 'natural'); s1.position.set(0, 0.2, -3); s1.rotation.z = Math.PI / 2; scene.add(s1); state.sticksInScene.push(s1);
+    const s2 = createStickGeometry(def, 'natural'); s2.position.set(-2, 0.2, 0); s2.rotation.set(0, Math.PI/3, Math.PI/2); scene.add(s2); state.sticksInScene.push(s2);
+    const s3 = createStickGeometry(def, 'natural'); s3.position.set(2, 0.2, 0); s3.rotation.set(0, -Math.PI/3, Math.PI/2); scene.add(s3); state.sticksInScene.push(s3);
+  } else if (type === 'tower') {
+    for (let i = 0; i < 4; i++) {
+      const angle = (i * Math.PI / 2) + Math.PI / 4;
+      const stick = createStickGeometry(PIONEERING_STICKS[5], 'natural');
+      stick.position.set(Math.cos(angle) * 4, 8, Math.sin(angle) * 4);
+      stick.rotation.set(0, -angle, Math.PI / 12);
+      scene.add(stick); state.sticksInScene.push(stick);
+    }
+  } else if (type === 'bridge') {
+    const r1 = createStickGeometry(PIONEERING_STICKS[5], 'dark'); r1.position.set(0, 0.2, -2.5); r1.rotation.z = Math.PI / 2; scene.add(r1); state.sticksInScene.push(r1);
+    const r2 = createStickGeometry(PIONEERING_STICKS[5], 'dark'); r2.position.set(0, 0.2, 2.5); r2.rotation.z = Math.PI / 2; scene.add(r2); state.sticksInScene.push(r2);
+    for (let x = -8; x <= 8; x += 3) {
+      const p = createStickGeometry(PIONEERING_STICKS[0], 'light');
+      p.position.set(x, 0.6, 0); p.rotation.set(0, Math.PI / 2, Math.PI / 2);
+      scene.add(p); state.sticksInScene.push(p);
+    }
+  } else {
+    const s1 = createStickGeometry(def, 'natural'); s1.position.set(0, 0.2, -2); s1.rotation.z = Math.PI / 2; scene.add(s1); state.sticksInScene.push(s1);
+    const s2 = createStickGeometry(def, 'natural'); s2.position.set(0, 0.2, 2); s2.rotation.z = Math.PI / 2; scene.add(s2); state.sticksInScene.push(s2);
+    const c1 = createStickGeometry(def, 'light'); c1.position.set(-3, 0.6, 0); c1.rotation.set(0, Math.PI / 2, Math.PI / 2); scene.add(c1); state.sticksInScene.push(c1);
+    const c2 = createStickGeometry(def, 'light'); c2.position.set(3, 0.6, 0); c2.rotation.set(0, Math.PI / 2, Math.PI / 2); scene.add(c2); state.sticksInScene.push(c2);
+  }
+
+  saveStateToHistory();
+  updateStickCountHUD();
+  showToast(`Preset ${type.toUpperCase()} dimuat`);
+}
+
+function setupUI() {
+  const stickContainers = [
+    document.getElementById('stick-selector-container'),
+    document.getElementById('mobile-stick-selector-container')
+  ];
+
+  stickContainers.forEach(container => {
+    if (!container) return;
+    container.innerHTML = '';
+    PIONEERING_STICKS.forEach(stick => {
+      const btn = document.createElement('button');
+      btn.className = `stick-option p-2.5 rounded-xl border border-zinc-800 bg-zinc-950 hover:border-zinc-700 text-left transition flex items-center gap-2 ${stick.id === state.selectedStickId ? 'stick-option-active' : ''}`;
+      btn.onclick = () => {
+        state.selectedStickId = stick.id;
+        addStickToCanvas(stick.id);
+        closeMobileSheets();
+      };
+      btn.innerHTML = `
+        <span class="text-base">${stick.icon}</span>
+        <div>
+          <div class="text-xs font-bold text-zinc-200">${stick.name}</div>
+          <div class="text-[10px] text-zinc-500 font-mono">P: ${stick.length * 10}cm</div>
+        </div>
+      `;
+      container.appendChild(btn);
     });
-    playSound('place');updateHUDStats();return;
-  }
-
-  const hits=raycaster.intersectObjects(state.sticksInScene.map(s=>s.meshGroup),true);
-  if(!hits.length){
-    // Klik area kosong di mode select = deselect
-    if(state.activeTool==='select')deselectStick();
-    return;
-  }
-  let group=hits[0].object;
-  while(group&&(!group.userData||!group.userData.id))group=group.parent;
-  if(!group)return;
-  const item=state.sticksInScene.find(s=>s.id===group.userData.id);
-  if(!item)return;
-  if(state.activeTool==='select'){
-    selectStickInScene(item.id,state.multiSelectMode);
-    return;
-  }
-  if(state.activeTool==='delete'){
-    scene.remove(group);state.sticksInScene=state.sticksInScene.filter(s=>s.id!==item.id);playSound('delete');updateHUDStats();
-    if(selectedStickIds.includes(item.id))deselectStick();
-  }else if(state.activeTool==='paint'){
-    const color=getColorDef();item.colorId=color.id;group.userData.colorId=color.id;
-    group.traverse(o=>{if(o.isMesh&&o.material&&o.material.color&&o.parent?.name!=='connection-markers')o.material.color.set(color.hex)});
-    playSound('paint');updateHUDStats();
-  }
-}
-
-function rotateStick(axis){
-  if(axis==='x'||axis==='y'||axis==='z'){state.rotation[axis]=(state.rotation[axis]+90)%360;}
-  else if(axis==='z15')state.rotation.z=(state.rotation.z+15)%360;
-  else if(axis==='z-15')state.rotation.z=(state.rotation.z+345)%360;
-  setGhostRotation();
-  if(ghostMesh&&ghostMesh.visible)clampStickToGround(ghostMesh);
-  showToast(`Rotasi tongkat: X ${state.rotation.x}° · Y ${state.rotation.y}° · Z ${state.rotation.z}°`);
-}
-
-function toggleMultiSelectMode(){
-  state.multiSelectMode=!state.multiSelectMode;
-  const sw=document.getElementById('multi-select-switch');
-  const knob=document.getElementById('multi-select-knob');
-  sw.classList.toggle('bg-amber-500',state.multiSelectMode);
-  sw.classList.toggle('bg-zinc-700',!state.multiSelectMode);
-  knob.classList.toggle('translate-x-4',state.multiSelectMode);
-  if(state.activeTool!=='select')setTool('select');
-  showToast(state.multiSelectMode?'Mode Pilih Banyak aktif · klik beberapa tongkat':'Mode Pilih Banyak nonaktif');
-}
-
-function setTool(tool){
-  state.activeTool=tool;
-  ['place','select','delete','paint'].forEach(t=>{
-    const b=document.getElementById('tool-'+t);
-    if(b)b.classList.toggle('tool-active',t===tool);
   });
-  if(tool!=='place'&&ghostMesh)ghostMesh.visible=false;
-  if(tool!=='select')deselectStick();
-  showToast(`Mode alat: ${tool.toUpperCase()}`);
-}
 
-// =========================================================
-// SELECTION SYSTEM (mendukung pilih satu atau banyak tongkat)
-// =========================================================
-let selectedStickId=null;      // tongkat terakhir yang dipilih (dipakai gizmo & inspector tunggal)
-let selectedStickIds=[];       // daftar semua id tongkat yang sedang dipilih
-let selectionOutlines=[];      // array THREE.Box3Helper untuk setiap tongkat terpilih
+  const colorContainers = [
+    document.getElementById('color-palette-container'),
+    document.getElementById('mobile-color-palette-container')
+  ];
 
-function addSelectionOutline(item){
-  const box=new THREE.Box3().setFromObject(item.meshGroup);
-  const helper=new THREE.Box3Helper(box,new THREE.Color(0xf59e0b));
-  helper.userData.isSelectionHelper=true;
-  helper.userData.forId=item.id;
-  scene.add(helper);
-  selectionOutlines.push(helper);
-}
+  colorContainers.forEach(container => {
+    if (!container) return;
+    container.innerHTML = '';
+    STICK_COLORS.forEach(col => {
+      const btn = document.createElement('button');
+      btn.className = 'w-8 h-8 rounded-xl border border-zinc-700 hover:scale-110 transition shadow-md flex items-center justify-center';
+      btn.style.backgroundColor = col.hex;
+      btn.onclick = () => {
+        state.selectedColorId = col.id;
+        document.getElementById('selected-color-label').innerText = col.name;
+        if (state.selectedSticks.length > 0) {
+          state.selectedSticks.forEach(st => paintStickMesh(st, col.id));
+        }
+        closeMobileSheets();
+      };
+      container.appendChild(btn);
+    });
+  });
 
-function clearSelectionOutlines(){
-  selectionOutlines.forEach(h=>scene.remove(h));
-  selectionOutlines=[];
-}
-
-function rebuildSelectionOutlines(){
-  clearSelectionOutlines();
-  selectedStickIds.forEach(id=>{
-    const item=state.sticksInScene.find(s=>s.id===id);
-    if(item)addSelectionOutline(item);
+  // Shortcuts
+  window.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'INPUT') return;
+    if (e.key === 'Delete' || e.key === 'Backspace') deleteSelected();
+    if (e.ctrlKey && e.key === 'z') { e.preventDefault(); undo(); }
+    if (e.ctrlKey && e.key === 'y') { e.preventDefault(); redo(); }
+    if (e.key === 'd') duplicateSelected();
+    if (e.key === 'r') rotateSelectedQuick(45);
   });
 }
 
-function selectStickInScene(id,additive=false){
-  const item=state.sticksInScene.find(s=>s.id===id);
-  if(!item)return;
-  if(additive){
-    const idx=selectedStickIds.indexOf(id);
-    if(idx>=0)selectedStickIds.splice(idx,1);
-    else selectedStickIds.push(id);
-  }else{
-    selectedStickIds=[id];
-  }
-  selectedStickId=selectedStickIds.length?selectedStickIds[selectedStickIds.length-1]:null;
-  rebuildSelectionOutlines();
-  refreshSelectionPanels();
+function openMobileSheet(id) {
+  closeMobileSheets();
+  document.getElementById('sheet-overlay').classList.remove('hidden');
+  const sheet = document.getElementById(id);
+  if (sheet) sheet.classList.add('open');
 }
 
-// Menampilkan panel yang sesuai: kosong / inspector tunggal / panel multi-pilih
-function refreshSelectionPanels(){
-  if(selectedStickIds.length===0){
-    closeInspector();
-    closeMultiSelectPanel();
-    hideGizmo();
-  }else if(selectedStickIds.length===1){
-    closeMultiSelectPanel();
-    const item=state.sticksInScene.find(s=>s.id===selectedStickIds[0]);
-    if(item){openInspector(item);showGizmo(item);}
-  }else{
-    closeInspector();
-    hideGizmo();
-    openMultiSelectPanel();
-  }
+function closeMobileSheets() {
+  document.getElementById('sheet-overlay').classList.add('hidden');
+  document.querySelectorAll('.bottom-sheet').forEach(s => s.classList.remove('open'));
 }
 
-function openMultiSelectPanel(){
-  document.getElementById('multi-select-count').textContent=`${selectedStickIds.length} Tongkat`;
-  document.getElementById('multi-offset-x').value=0;
-  document.getElementById('multi-offset-y').value=0;
-  document.getElementById('multi-offset-z').value=0;
-  document.getElementById('multi-select-panel').classList.add('visible');
-}
-function closeMultiSelectPanel(){
-  document.getElementById('multi-select-panel').classList.remove('visible');
+function openAdvancedSettings() {
+  document.getElementById('advanced-settings-modal').classList.add('visible');
 }
 
-function multiOffsetKey(e){if(e.key==='Enter')applyGroupOffset();}
-
-function applyGroupOffset(){
-  if(!selectedStickIds.length)return;
-  const dx=parseFloat(document.getElementById('multi-offset-x').value)||0;
-  const dy=parseFloat(document.getElementById('multi-offset-y').value)||0;
-  const dz=parseFloat(document.getElementById('multi-offset-z').value)||0;
-  if(dx===0&&dy===0&&dz===0){showToast('Isi nilai geser X/Y/Z terlebih dahulu');return;}
-  selectedStickIds.forEach(id=>{
-    const item=state.sticksInScene.find(s=>s.id===id);
-    if(!item)return;
-    item.meshGroup.position.x+=dx;
-    item.meshGroup.position.y+=dy;
-    item.meshGroup.position.z+=dz;
-    item.pos.copy(item.meshGroup.position);
-    item.meshGroup.userData.basePos.copy(item.meshGroup.position);
-  });
-  rebuildSelectionOutlines();
-  document.getElementById('multi-offset-x').value=0;
-  document.getElementById('multi-offset-y').value=0;
-  document.getElementById('multi-offset-z').value=0;
-  showToast(`Posisi ${selectedStickIds.length} tongkat berhasil digeser`);
+function closeAdvancedSettings() {
+  document.getElementById('advanced-settings-modal').classList.remove('visible');
 }
 
-function groupFlipHorizontal(){
-  // Cermin kiri-kanan: posisi X ditukar terhadap titik tengah kelompok (seperti sayap kanan jadi kiri)
-  if(!selectedStickIds.length)return;
-  const items=selectedStickIds.map(id=>state.sticksInScene.find(s=>s.id===id)).filter(Boolean);
-  if(!items.length)return;
-  const pivotX=items.reduce((sum,it)=>sum+it.meshGroup.position.x,0)/items.length;
-  items.forEach(item=>{
-    const p=item.meshGroup.position;
-    p.x=2*pivotX-p.x;
-    item.meshGroup.rotation.y=-item.meshGroup.rotation.y;
-    item.meshGroup.rotation.z=-item.meshGroup.rotation.z;
-    item.pos.copy(p);
-    item.rotation.copy(item.meshGroup.rotation);
-    item.meshGroup.userData.basePos.copy(p);
-    item.meshGroup.userData.baseRotation.copy(item.meshGroup.rotation);
-  });
-  rebuildSelectionOutlines();
-  showToast(`${items.length} tongkat dicerminkan horizontal (kiri ↔ kanan)`);
+function setCameraView(view) {
+  document.querySelectorAll('.view-btn').forEach(btn => btn.classList.remove('view-btn-active'));
+  const activeBtn = document.getElementById(`view-btn-${view}`);
+  if (activeBtn) activeBtn.classList.add('view-btn-active');
+
+  const dist = 28;
+  if (view === '3d') camera.position.set(18, 14, 20);
+  else if (view === 'front') camera.position.set(0, 4, dist);
+  else if (view === 'back') camera.position.set(0, 4, -dist);
+  else if (view === 'left') camera.position.set(-dist, 4, 0);
+  else if (view === 'right') camera.position.set(dist, 4, 0);
+  else if (view === 'top') camera.position.set(0, dist, 0.01);
+
+  controls.target.set(0, 1, 0);
+  controls.update();
 }
 
-function groupFlipVertical(){
-  // Cermin atas-bawah: posisi Y ditukar terhadap titik tengah kelompok (seperti segitiga terbalik)
-  if(!selectedStickIds.length)return;
-  const items=selectedStickIds.map(id=>state.sticksInScene.find(s=>s.id===id)).filter(Boolean);
-  if(!items.length)return;
-  const pivotY=items.reduce((sum,it)=>sum+it.meshGroup.position.y,0)/items.length;
-  items.forEach(item=>{
-    const p=item.meshGroup.position;
-    p.y=2*pivotY-p.y;
-    item.meshGroup.rotation.x=-item.meshGroup.rotation.x;
-    item.meshGroup.rotation.z=-item.meshGroup.rotation.z;
-    item.pos.copy(p);
-    item.rotation.copy(item.meshGroup.rotation);
-    item.meshGroup.userData.basePos.copy(p);
-    item.meshGroup.userData.baseRotation.copy(item.meshGroup.rotation);
-  });
-  rebuildSelectionOutlines();
-  showToast(`${items.length} tongkat dicerminkan vertikal (atas ↔ bawah)`);
-}
+function applyInspector() {
+  if (state.selectedSticks.length !== 1) return;
+  const stick = state.selectedSticks[0];
+  if (stick.userData.isLocked) return;
 
-function deselectStick(){
-  selectedStickIds=[];
-  selectedStickId=null;
-  clearSelectionOutlines();
-  closeInspector();
-  closeMultiSelectPanel();
-  hideGizmo();
-}
+  const px = parseFloat(document.getElementById('inp-pos-x').value) || 0;
+  const py = parseFloat(document.getElementById('inp-pos-y').value) || 0;
+  const pz = parseFloat(document.getElementById('inp-pos-z').value) || 0;
 
-// Refresh outline posisi setelah objek bergerak (dipakai saat 1 tongkat terpilih)
-function refreshSelectionOutline(){
-  if(!selectedStickId)return;
-  const item=state.sticksInScene.find(s=>s.id===selectedStickId);
-  if(!item)return;
-  const helper=selectionOutlines.find(h=>h.userData.forId===selectedStickId);
-  if(!helper)return;
-  const box=new THREE.Box3().setFromObject(item.meshGroup);
-  helper.box.copy(box);
-}
+  const rx = parseFloat(document.getElementById('inp-rot-x').value) || 0;
+  const ry = parseFloat(document.getElementById('inp-rot-y').value) || 0;
+  const rz = parseFloat(document.getElementById('inp-rot-z').value) || 0;
 
-// =========================================================
-// INSPECTOR PANEL
-// =========================================================
-function openInspector(item){
-  const panel=document.getElementById('inspector-panel');
-  panel.classList.add('visible');
-  const def=PIONEERING_STICKS.find(s=>s.id===item.typeId)||{name:'Tongkat'};
-  document.getElementById('inspector-stick-label').textContent=def.name;
-  syncInspectorFields(item);
-}
-
-function closeInspector(){
-  document.getElementById('inspector-panel').classList.remove('visible');
-}
-
-function syncInspectorFields(item){
-  const p=item.meshGroup.position;
-  const r=item.meshGroup.rotation;
-  const fmt=v=>parseFloat(v.toFixed(3));
-  document.getElementById('inp-pos-x').value=fmt(p.x);
-  document.getElementById('inp-pos-y').value=fmt(p.y);
-  document.getElementById('inp-pos-z').value=fmt(p.z);
-  document.getElementById('inp-rot-x').value=fmt(THREE.MathUtils.radToDeg(r.x));
-  document.getElementById('inp-rot-y').value=fmt(THREE.MathUtils.radToDeg(r.y));
-  document.getElementById('inp-rot-z').value=fmt(THREE.MathUtils.radToDeg(r.z));
-}
-
-function applyInspector(){
-  if(!selectedStickId)return;
-  const item=state.sticksInScene.find(s=>s.id===selectedStickId);
-  if(!item)return;
-  const px=parseFloat(document.getElementById('inp-pos-x').value)||0;
-  const py=parseFloat(document.getElementById('inp-pos-y').value)||0;
-  const pz=parseFloat(document.getElementById('inp-pos-z').value)||0;
-  const rx=parseFloat(document.getElementById('inp-rot-x').value)||0;
-  const ry=parseFloat(document.getElementById('inp-rot-y').value)||0;
-  const rz=parseFloat(document.getElementById('inp-rot-z').value)||0;
-  item.meshGroup.position.set(px,py,pz);
-  item.meshGroup.rotation.set(
+  stick.position.set(px, py, pz);
+  stick.rotation.set(
     THREE.MathUtils.degToRad(rx),
     THREE.MathUtils.degToRad(ry),
     THREE.MathUtils.degToRad(rz)
   );
-  // Sync state.pos & state.rotation
-  item.pos.copy(item.meshGroup.position);
-  item.rotation.copy(item.meshGroup.rotation);
-  item.meshGroup.userData.basePos.copy(item.meshGroup.position);
-  refreshSelectionOutline();
-  showGizmo(item);
+
+  saveStateToHistory();
+  updateSelectionHighlights();
 }
 
-function inspectorKey(e){if(e.key==='Enter')applyInspector();}
-
-function resetSelectedRotation(){
-  if(!selectedStickId)return;
-  const item=state.sticksInScene.find(s=>s.id===selectedStickId);
-  if(!item)return;
-  item.meshGroup.rotation.set(0,0,0);
-  item.rotation.copy(item.meshGroup.rotation);
-  syncInspectorFields(item);
-  refreshSelectionOutline();
-  showGizmo(item);
-  showToast('Rotasi direset ke 0°');
+function updateStickCountHUD() {
+  document.getElementById('hud-stick-count').innerText = `${state.sticksInScene.length} batang`;
 }
 
-function snapSelectedToGround(){
-  if(!selectedStickId)return;
-  const item=state.sticksInScene.find(s=>s.id===selectedStickId);
-  if(!item)return;
-  clampStickToGround(item.meshGroup);
-  item.pos.copy(item.meshGroup.position);
-  item.meshGroup.userData.basePos.copy(item.meshGroup.position);
-  syncInspectorFields(item);
-  refreshSelectionOutline();
-  showGizmo(item);
-  showToast('Tongkat di-snap ke lantai');
+function onWindowResize() {
+  const container = document.getElementById('canvas-container');
+  camera.aspect = container.clientWidth / container.clientHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(container.clientWidth, container.clientHeight);
 }
 
-function duplicateSelected(){
-  if(!selectedStickId)return;
-  const item=state.sticksInScene.find(s=>s.id===selectedStickId);
-  if(!item)return;
-  const def=PIONEERING_STICKS.find(s=>s.id===item.typeId)||PIONEERING_STICKS[2];
-  const group=createStickGeometry(def,item.colorId);
-  const offset=def.radius*2+0.4;
-  const newPos=item.meshGroup.position.clone().add(new THREE.Vector3(offset,0,offset));
-  group.position.copy(newPos);
-  group.rotation.copy(item.meshGroup.rotation);
-  group.userData={
-    id:'stick_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),
-    typeId:def.id,colorId:item.colorId,length:def.length,radius:def.radius,
-    basePos:group.position.clone(),baseRotation:group.rotation.clone()
-  };
-  clampStickToGround(group);
-  group.userData.basePos.copy(group.position);
-  scene.add(group);
-  const newItem={id:group.userData.id,typeId:def.id,colorId:item.colorId,meshGroup:group,pos:group.position.clone(),rotation:group.rotation.clone()};
-  state.sticksInScene.push(newItem);
-  updateHUDStats();
-  playSound('place');
-  selectStickInScene(newItem.id);
-  showToast('Tongkat berhasil diduplikat');
-}
-
-function duplicateAllSelected(){
-  if(selectedStickIds.length<2)return;
-  const idsToClone=[...selectedStickIds];
-  const newIds=[];
-  idsToClone.forEach(id=>{
-    const item=state.sticksInScene.find(s=>s.id===id);
-    if(!item)return;
-    const def=PIONEERING_STICKS.find(s=>s.id===item.typeId)||PIONEERING_STICKS[2];
-    const group=createStickGeometry(def,item.colorId);
-    const offset=def.radius*2+0.6;
-    const newPos=item.meshGroup.position.clone().add(new THREE.Vector3(offset,0,offset));
-    group.position.copy(newPos);
-    group.rotation.copy(item.meshGroup.rotation);
-    group.userData={
-      id:'stick_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),
-      typeId:def.id,colorId:item.colorId,length:def.length,radius:def.radius,
-      basePos:group.position.clone(),baseRotation:group.rotation.clone()
-    };
-    clampStickToGround(group);
-    group.userData.basePos.copy(group.position);
-    scene.add(group);
-    const newItem={id:group.userData.id,typeId:def.id,colorId:item.colorId,meshGroup:group,pos:group.position.clone(),rotation:group.rotation.clone()};
-    state.sticksInScene.push(newItem);
-    newIds.push(newItem.id);
-  });
-  updateHUDStats();
-  playSound('place');
-  selectedStickIds=newIds;
-  selectedStickId=newIds[newIds.length-1]||null;
-  rebuildSelectionOutlines();
-  refreshSelectionPanels();
-  showToast(`${newIds.length} tongkat berhasil diduplikat`);
-}
-
-function deleteAllSelected(){
-  if(!selectedStickIds.length)return;
-  const count=selectedStickIds.length;
-  selectedStickIds.forEach(id=>{
-    const item=state.sticksInScene.find(s=>s.id===id);
-    if(item)scene.remove(item.meshGroup);
-  });
-  state.sticksInScene=state.sticksInScene.filter(s=>!selectedStickIds.includes(s.id));
-  deselectStick();
-  playSound('delete');
-  updateHUDStats();
-  showToast(`${count} tongkat dihapus`);
-}
-
-function deleteSelected(){
-  if(!selectedStickId)return;
-  const item=state.sticksInScene.find(s=>s.id===selectedStickId);
-  if(!item)return;
-  scene.remove(item.meshGroup);
-  state.sticksInScene=state.sticksInScene.filter(s=>s.id!==selectedStickId);
-  deselectStick();
-  playSound('delete');
-  updateHUDStats();
-  showToast('Tongkat dihapus');
-}
-
-// =========================================================
-// ROTATION GIZMO (kayak Canva — drag ring untuk rotate)
-// =========================================================
-const GIZMO_SIZE=56; // radius ring px
-let gizmoState={
-  visible:false,
-  screenX:0,screenY:0,    // center gizmo di layar
-  dragging:false,
-  dragAxis:null,          // 'x'|'y'|'z'
-  dragStartAngle:0,
-  dragStartRot:{x:0,y:0,z:0},
-};
-
-function showGizmo(item){
-  // Project world pos ke screen
-  const pos=item.meshGroup.position.clone();
-  const projected=pos.project(camera);
-  const rect=renderer.domElement.getBoundingClientRect();
-  const sx=((projected.x+1)/2)*rect.width;
-  const sy=((-projected.y+1)/2)*rect.height;
-  gizmoState.screenX=sx;
-  gizmoState.screenY=sy;
-  gizmoState.visible=true;
-  const el=document.getElementById('rotation-gizmo');
-  el.style.display='block';
-  el.style.left=(sx-GIZMO_SIZE)+'px';
-  el.style.top=(sy-GIZMO_SIZE)+'px';
-  el.style.width=(GIZMO_SIZE*2)+'px';
-  el.style.height=(GIZMO_SIZE*2)+'px';
-  document.getElementById('gizmo-svg').setAttribute('width',GIZMO_SIZE*2);
-  document.getElementById('gizmo-svg').setAttribute('height',GIZMO_SIZE*2);
-  document.getElementById('gizmo-svg').setAttribute('viewBox',`${-GIZMO_SIZE} ${-GIZMO_SIZE} ${GIZMO_SIZE*2} ${GIZMO_SIZE*2}`);
-  // Update ring size
-  const R=GIZMO_SIZE-6;
-  document.getElementById('ring-x').setAttribute('r',R);
-  document.getElementById('ring-z').setAttribute('rx',R);
-  document.getElementById('ring-z').setAttribute('ry',Math.round(R*0.38));
-  document.getElementById('ring-y').setAttribute('rx',Math.round(R*0.38));
-  document.getElementById('ring-y').setAttribute('ry',R);
-}
-
-function hideGizmo(){
-  gizmoState.visible=false;
-  document.getElementById('rotation-gizmo').style.display='none';
-  document.getElementById('gizmo-degree-label').style.display='none';
-}
-
-// Gizmo drag — attach ke rings
-(function setupGizmoDrag(){
-  const rings=['ring-x','ring-y','ring-z'];
-  rings.forEach(rid=>{
-    const el=document.getElementById(rid);
-    const axis=el.getAttribute('data-axis');
-
-    el.addEventListener('pointerdown',e=>{
-      if(!selectedStickId)return;
-      e.stopPropagation();
-      e.preventDefault();
-      controls.enabled=false;
-      gizmoState.dragging=true;
-      gizmoState.dragAxis=axis;
-      el.classList.add('dragging');
-      el.setPointerCapture(e.pointerId);
-      // Simpan rotasi awal dalam derajat
-      const item=state.sticksInScene.find(s=>s.id===selectedStickId);
-      if(item){
-        gizmoState.dragStartRot={
-          x:THREE.MathUtils.radToDeg(item.meshGroup.rotation.x),
-          y:THREE.MathUtils.radToDeg(item.meshGroup.rotation.y),
-          z:THREE.MathUtils.radToDeg(item.meshGroup.rotation.z),
-        };
-      }
-      // Sudut awal mouse relatif ke center gizmo
-      const rect=renderer.domElement.getBoundingClientRect();
-      const dx=e.clientX-rect.left-gizmoState.screenX;
-      const dy=e.clientY-rect.top-gizmoState.screenY;
-      gizmoState.dragStartAngle=Math.atan2(dy,dx);
-
-      const label=document.getElementById('gizmo-degree-label');
-      label.style.display='block';
-      label.style.left=(gizmoState.screenX)+'px';
-      label.style.top=(gizmoState.screenY-GIZMO_SIZE-14)+'px';
-    });
-
-    el.addEventListener('pointermove',e=>{
-      if(!gizmoState.dragging||gizmoState.dragAxis!==axis)return;
-      e.preventDefault();
-      const item=state.sticksInScene.find(s=>s.id===selectedStickId);
-      if(!item)return;
-      const rect=renderer.domElement.getBoundingClientRect();
-      const dx=e.clientX-rect.left-gizmoState.screenX;
-      const dy=e.clientY-rect.top-gizmoState.screenY;
-      const angle=Math.atan2(dy,dx);
-      let delta=THREE.MathUtils.radToDeg(angle-gizmoState.dragStartAngle);
-      // Snap ke 5°
-      delta=Math.round(delta/5)*5;
-
-      const newRot={...gizmoState.dragStartRot};
-      newRot[axis]=(newRot[axis]+delta+360)%360;
-
-      item.meshGroup.rotation.set(
-        THREE.MathUtils.degToRad(newRot.x),
-        THREE.MathUtils.degToRad(newRot.y),
-        THREE.MathUtils.degToRad(newRot.z)
-      );
-      item.rotation.copy(item.meshGroup.rotation);
-      syncInspectorFields(item);
-      refreshSelectionOutline();
-
-      const label=document.getElementById('gizmo-degree-label');
-      const sign=delta>=0?'+':'';
-      label.textContent=`${sign}${delta}° (${Math.round(newRot[axis])}°)`;
-      label.style.left=(gizmoState.screenX)+'px';
-      label.style.top=(gizmoState.screenY-GIZMO_SIZE-14)+'px';
-    });
-
-    el.addEventListener('pointerup',e=>{
-      if(!gizmoState.dragging)return;
-      gizmoState.dragging=false;
-      gizmoState.dragAxis=null;
-      el.classList.remove('dragging');
-      controls.enabled=true;
-      document.getElementById('gizmo-degree-label').style.display='none';
-      const item=state.sticksInScene.find(s=>s.id===selectedStickId);
-      if(item){
-        item.meshGroup.userData.basePos.copy(item.meshGroup.position);
-        showToast(`Rotasi: X ${Math.round(THREE.MathUtils.radToDeg(item.meshGroup.rotation.x))}° · Y ${Math.round(THREE.MathUtils.radToDeg(item.meshGroup.rotation.y))}° · Z ${Math.round(THREE.MathUtils.radToDeg(item.meshGroup.rotation.z))}°`);
-      }
-    });
-  });
-})();
-function selectStick(id){state.selectedStickId=id;renderUIComponents();updateGhostMesh();showToast(`Dipilih: ${getStickDef().name}`)}
-function selectColor(id){state.selectedColorId=id;const c=getColorDef();document.getElementById('selected-color-label').innerText=c.name;renderUIComponents();updateGhostMesh()}
-function updateHUDStats(){document.getElementById('hud-stick-count').innerText=`${state.sticksInScene.length} batang`}
-function showToast(msg){const t=document.getElementById('toast'),m=document.getElementById('toast-message');m.innerText=msg;t.classList.remove('translate-y-10','opacity-0','pointer-events-none');setTimeout(()=>t.classList.add('translate-y-10','opacity-0','pointer-events-none'),2200)}
-
-function setCameraView(view){
-  playSound('camera');document.querySelectorAll('.view-btn').forEach(b=>b.classList.remove('view-btn-active'));const btn=document.getElementById('view-btn-'+view);if(btn)btn.classList.add('view-btn-active');
-  let p={x:18,y:13,z:20},label='3D Isometric';
-  if(view==='front'){p={x:0,y:7,z:26};label='Depan'}else if(view==='back'){p={x:0,y:7,z:-26};label='Belakang'}else if(view==='left'){p={x:-26,y:7,z:0};label='Kiri'}else if(view==='right'){p={x:26,y:7,z:0};label='Kanan'}else if(view==='top'){p={x:0,y:30,z:.001};label='Atas'}else if(view==='bottom'){p={x:0,y:-25,z:.001};label='Bawah'}
-  state.cameraTargetPos=p;state.isTransitioningCamera=true;document.getElementById('hud-camera-angle').innerText=label;showToast(`Sudut kamera: ${label}`)
-}
-function animateCameraTransition(){if(!state.isTransitioningCamera)return;const s=.1;camera.position.x+=(state.cameraTargetPos.x-camera.position.x)*s;camera.position.y+=(state.cameraTargetPos.y-camera.position.y)*s;camera.position.z+=(state.cameraTargetPos.z-camera.position.z)*s;controls.target.x+=(0-controls.target.x)*s;controls.target.y+=(1-controls.target.y)*s;controls.target.z+=(0-controls.target.z)*s;if(camera.position.distanceTo(new THREE.Vector3(state.cameraTargetPos.x,state.cameraTargetPos.y,state.cameraTargetPos.z))<.1){camera.position.set(state.cameraTargetPos.x,state.cameraTargetPos.y,state.cameraTargetPos.z);state.isTransitioningCamera=false}}
-
-function addPresetStick(type,color,x,y,z,rx=0,ry=0,rz=0){const def=PIONEERING_STICKS.find(s=>s.id===type)||PIONEERING_STICKS[2];const group=createStickGeometry(def,color);group.position.set(x,y,z);group.rotation.set(rx,ry,rz);group.userData={id:'stick_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),typeId:def.id,colorId:color,length:def.length,radius:def.radius,basePos:group.position.clone(),baseRotation:group.rotation.clone()};clampStickToGround(group);group.userData.basePos.copy(group.position);scene.add(group);state.sticksInScene.push({id:group.userData.id,typeId:def.id,colorId:color,meshGroup:group,pos:group.position.clone(),rotation:group.rotation.clone()})}
-
-function loadPreset(key){clearStudioScene(false);const S='stick_120',L='stick_150',XL='stick_180',c=state.selectedColorId;
-  if(key==='starter'){
-    addPresetStick(S,c,0,.18,0,0,0,0);addPresetStick(S,c,0,.18,5,0,0,0);addPresetStick(S,c,-2.5,.18,2.5,0,Math.PI/2,0);
-  }else if(key==='bridge'){
-    [-5,0,5].forEach(x=>addPresetStick(L,c,x,.18,-2.2,0,0,0));[-5,0,5].forEach(x=>addPresetStick(L,c,x,.18,2.2,0,0,0));
-    addPresetStick(XL,c,0,.25,-2.2,0,0,0);addPresetStick(XL,c,0,.25,2.2,0,0,0);addPresetStick(XL,c,0,2.3,0,0,0,0);
-  }else if(key==='rack'){
-    [-4,4].forEach(x=>addPresetStick(L,c,x,1.2,0,0,0,Math.PI/2));[0,3,6].forEach(y=>addPresetStick(L,c,0,y,0,0,0,0));
-  }else if(key==='tripod'){
-    const a=Math.PI/6;addPresetStick(XL,c,0,1.5,0,0,0,a);addPresetStick(XL,c,0,1.5,0,0,Math.PI*2/3,a);addPresetStick(XL,c,0,1.5,0,0,-Math.PI*2/3,a);addPresetStick(S,c,0,7,0,0,0,0);
-  }else if(key==='triangle'){
-    addPresetStick(L,c,-3,2.6,0,0,0,Math.PI/6);addPresetStick(L,c,3,2.6,0,0,0,-Math.PI/6);addPresetStick(L,c,0,.18,5,0,0,0);addPresetStick(S,c,0,5,0,0,Math.PI/2,0);
-  }else if(key==='tower'){
-    [-4,4].forEach(x=>[-4,4].forEach(z=>addPresetStick(L,c,x,0,z,0,0,Math.PI/2)));
-    [-4,4].forEach(z=>addPresetStick(XL,c,0,2.2,z,0,0,0));
-    [-4,4].forEach(x=>addPresetStick(XL,c,x,2.2,0,Math.PI/2,0,0));
-    [-4,4].forEach(z=>addPresetStick(XL,c,0,6,z,0,0,0));
-    addPresetStick(XL,c,0,8,0,0,0,0);
-  }
-  updateHUDStats();showToast(`Preset ${key.toUpperCase()} berhasil dimuat`)
-}
-
-function toggleExplodeView(){state.isExploded=!state.isExploded;const btn=document.getElementById('btn-explode');btn.classList.toggle('bg-amber-500',state.isExploded);btn.classList.toggle('text-zinc-950',state.isExploded);btn.classList.toggle('bg-zinc-800',!state.isExploded);btn.classList.toggle('text-amber-400',!state.isExploded);
-  if(state.isExploded){state.sticksInScene.forEach((s,i)=>{const p=s.pos.clone();const dir=p.length()>0?p.normalize():new THREE.Vector3(1,0,0);s.meshGroup.position.copy(p.clone().add(dir.multiplyScalar(1+i*.35)).add(new THREE.Vector3(0,i*.22,0)))}) ;showToast('Explode Step aktif')}
-  else state.sticksInScene.forEach(s=>{s.meshGroup.position.copy(s.pos);s.meshGroup.rotation.copy(s.rotation)});
-}
-function undoLastStick(){if(!state.sticksInScene.length)return;const s=state.sticksInScene.pop();scene.remove(s.meshGroup);playSound('delete');updateHUDStats();showToast('Tongkat terakhir di-undo')}
-function clearStudioScene(show=true){state.sticksInScene.forEach(s=>scene.remove(s.meshGroup));state.sticksInScene=[];state.isExploded=false;updateHUDStats();if(show)showToast('Kanvas rakitan dibersihkan')}
-
-function renderUIComponents(){
-  document.getElementById('stick-selector-container').innerHTML=PIONEERING_STICKS.map(s=>`<button onclick="selectStick('${s.id}')" class="stick-option p-2.5 rounded-xl border text-left transition flex items-center gap-2 ${state.selectedStickId===s.id?'stick-option-active':'border-zinc-800 bg-zinc-950 text-zinc-400 hover:border-zinc-700'}"><span class="text-lg">${s.icon}</span><div class="overflow-hidden"><span class="text-xs block truncate">${s.name}</span><span class="text-[9px] text-zinc-500">Ø ${(s.radius*2).toFixed(2)} unit</span></div></button>`).join('');
-  document.getElementById('color-palette-container').innerHTML=STICK_COLORS.map(c=>`<button onclick="selectColor('${c.id}')" title="${c.name}" class="w-full aspect-square rounded-xl border-2 transition relative ${state.selectedColorId===c.id?'border-amber-400 scale-110 shadow-lg ring-2 ring-amber-500/30':'border-zinc-800 hover:scale-105'}" style="background-color:${c.hex}"></button>`).join('');
-}
-
-function animate(){
+function animate() {
   requestAnimationFrame(animate);
-  animateCameraTransition();
-  if(controls)controls.update();
-  if(renderer&&scene&&camera){
-    renderer.render(scene,camera);
-    // Update posisi gizmo setiap frame (kamera bisa bergerak)
-    if(gizmoState.visible&&selectedStickId&&!gizmoState.dragging){
-      const item=state.sticksInScene.find(s=>s.id===selectedStickId);
-      if(item)showGizmo(item);
-    }
+  controls.update();
+
+  if (state.selectedSticks.length > 0) {
+    positionCanvaElementsScreen(state.selectedSticks[0]);
   }
+
+  renderer.render(scene, camera);
 }
-function onWindowResize(){const c=document.getElementById('canvas-container');if(!c||!camera||!renderer)return;camera.aspect=c.clientWidth/c.clientHeight;camera.updateProjectionMatrix();renderer.setSize(c.clientWidth,c.clientHeight)}
-window.onload=()=>{renderUIComponents();init3DStudio();loadPreset('starter')};
+
+window.onload = () => {
+  init3DStudio();
+};
 </script>
 </body>
 </html>
